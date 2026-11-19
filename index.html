@@ -64,7 +64,8 @@ body{margin:0;background:linear-gradient(135deg,#dbeafe,#c7d2fe);padding:14px;mi
   <button type="button" class="action-btn" onclick="openDailyChallenge()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#ea580c,#f59e0b);color:white">🔥 تحدي اليوم</button>
   <div id="studentHomeworkHonorBoard" style="display:none;margin-top:16px;padding:16px;border-radius:16px;background:linear-gradient(135deg,#fffbeb,#fef3c7);text-align:right"></div>
  </div>
- <div class="section" id="stSuccess" style="display:none;text-align:center"><h1 style="font-size:60px">🎉</h1><h2 style="color:#16a34a">تم إرسال إجاباتك بنجاح!</h2><p style="color:#166534;font-weight:bold">تم تسجيل إجابتك. لا يمكن إعادة إرسال هذه الورقة مرة أخرى.</p><button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:18px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف</button><div id="studentHomeworkHonorBoardSuccess" style="display:none;margin-top:16px;padding:16px;border-radius:16px;background:linear-gradient(135deg,#fffbeb,#fef3c7);text-align:right"></div></div>
+ <div class="section" id="stSuccess" style="display:none;text-align:center"><h1 style="font-size:60px">🎉</h1><h2 style="color:#16a34a">تم إرسال إجاباتك بنجاح!</h2><p style="color:#166534;font-weight:bold">تم تسجيل إجابتك. لا يمكن إعادة إرسال هذه الورقة مرة أخرى.</p><button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:18px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف</button>
+ <button type="button" class="action-btn" onclick="openDailyChallenge()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#ea580c,#f59e0b);color:white">🔥 تحدي اليوم</button><div id="studentHomeworkHonorBoardSuccess" style="display:none;margin-top:16px;padding:16px;border-radius:16px;background:linear-gradient(135deg,#fffbeb,#fef3c7);text-align:right"></div></div>
  <div class="section" id="dailyChallengePanel" style="display:none;border:2px solid #f59e0b;background:linear-gradient(135deg,#fff7ed,#fffbeb)">
   <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
    <h2 style="color:#c2410c;margin:0">🔥 تحدي اليوم</h2>
@@ -74,7 +75,7 @@ body{margin:0;background:linear-gradient(135deg,#dbeafe,#c7d2fe);padding:14px;mi
  </div>
 </div>
 <script>
- for the dedicated student portal.
+// Firebase client setup for the dedicated student portal.
 const firebaseConfig = {
   apiKey: "AIzaSyCAeHOVGUpG7WcPcUh0XtBvmTwLGdcBCJE",
   authDomain: "school-points-qatar.firebaseapp.com",
