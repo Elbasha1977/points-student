@@ -51,6 +51,7 @@ body{margin:0;background:linear-gradient(135deg,#dbeafe,#c7d2fe);padding:14px;mi
   <input id="stPin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="off" placeholder="أدخل الرقم السري المخصص لك" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;font-size:18px;text-align:center;letter-spacing:8px;margin:10px 0 14px">
   <button id="stStartBtn" class="action-btn primary" onclick="startStudentWorksheet()" style="width:100%" disabled>⏳ جاري تحميل الورقة...</button>
   <button type="button" class="action-btn" onclick="showMyHomeworkResults()" style="width:100%;margin-top:10px;background:#0f766e;color:white">🏅 عرض نتائج نقاط واجباتي</button>
+  <button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف في واجبات النقاط المنزلية</button>
   <button type="button" class="action-btn" onclick="openDailyChallenge()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#ea580c,#f59e0b);color:white">🔥 تحدي اليوم — فرصة جديدة لجمع النقاط</button>
   <div id="myHomeworkResults" style="display:none;margin-top:14px;padding:12px;border-radius:10px;background:#ecfeff;text-align:right"></div>
  </div>
@@ -61,6 +62,7 @@ body{margin:0;background:linear-gradient(135deg,#dbeafe,#c7d2fe);padding:14px;mi
  </div>
  <div class="section" id="stSubmitArea" style="display:none;text-align:center">
   <button class="action-btn success" onclick="submitStudentAnswers()" style="width:100%">✅ إرسال الإجابات</button>
+  <button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف في واجبات النقاط المنزلية</button>
   <button type="button" class="action-btn" onclick="openDailyChallenge()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#ea580c,#f59e0b);color:white">🔥 تحدي اليوم</button>
   <div id="studentHomeworkHonorBoard" style="display:none;margin-top:16px;padding:16px;border-radius:16px;background:linear-gradient(135deg,#fffbeb,#fef3c7);text-align:right"></div>
  </div>
