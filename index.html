@@ -83,97 +83,51 @@ const firestoreDb = firebase.firestore();
 // ==================== محرك صفحة الطالب (مدمج) ====================
 // هذا الكود يجعل لوحة المدير تتحول إلى صفحة طالب إذا كان الرابط يحتوي على ?student
 
+// تهيئة بوابة الطالب المستقلة: نستخدم عناصر الصفحة الموجودة دون إنشاء واجهة مكررة.
 setTimeout(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const isStudentMode = window.location.hostname.toLowerCase() === 'student.abuhazem.com' || urlParams.get('student') === 'true';
+    const isStudentMode = window.location.hostname.toLowerCase() === 'student.abuhazem.com'
+        || urlParams.get('student') === 'true';
+    if (!isStudentMode) return;
+
     const worksheetId = urlParams.get('id');
+    const titleEl = document.getElementById('stTitle');
+    const startBtn = document.getElementById('stStartBtn');
 
-    if (isStudentMode && worksheetId) {
-        // إخفاء لوحة المدير بالكامل
-        const managerLogin = document.getElementById('loginScreen');
-        const managerApp = document.getElementById('mainApp');
-        if (managerLogin) managerLogin.style.display = 'none';
-        if (managerApp) managerApp.style.display = 'none';
-        
-        // إخفاء أي مودالات مفتوحة
-        document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+    if (!worksheetId) {
+        if (titleEl) titleEl.innerText = 'بوابة الطالب — افتح رابط ورقة العمل الذي أرسله المعلم';
+        if (startBtn) {
+            startBtn.disabled = true;
+            startBtn.textContent = 'افتح رابط ورقة العمل أولاً';
+        }
+        return;
+    }
 
-        // إنشاء واجهة الطالب
-        const studentUI = document.createElement('div');
-        studentUI.className = 'container';
-        studentUI.style.display = 'block';
-        studentUI.innerHTML = `
-            <div class="header">
-                <h1 id="stTitle" style="color:#4338ca;">⏳ جاري تحميل الورقة...</h1>
-            </div>
-            <div class="section" id="stInfoForm">
-                <h2>بيانات الطالب</h2>
-                <div style="margin-bottom:15px;">
-                    <label style="font-weight:bold; display:block; margin-bottom:5px;">اختر الصف:</label>
-                    <select id="stClass" onchange="populateStudentNames()" style="width:100%; padding:12px; border-radius:10px; border:1px solid #ccc; font-size:16px;">
-<option value="">-- اختر الصف --</option>
-<option value="السادس 2">السادس 2</option>
-<option value="السادس 4">السادس 4</option>
-<option value="السادس 6">السادس 6</option>
-</select>
-                </div>
-                <div style="margin-bottom:15px;">
-                    <label style="font-weight:bold; display:block; margin-bottom:5px;">اسمك:</label>
-                    <select id="stName" disabled style="width:100%; padding:12px; border-radius:10px; border:1px solid #ccc; font-size:16px;"><option value="">-- اختر الصف أولاً --</option></select>
-                </div>
-                <div style="margin-bottom:15px;">
-                    <label style="font-weight:bold; display:block; margin-bottom:5px;">الرقم السري الخاص بك (4 أرقام):</label>
-                    <input id="stPin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="off" placeholder="أدخل الرقم السري المخصص لك" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;font-size:18px;text-align:center;letter-spacing:8px;">
-                </div>
-                <button id="stStartBtn" class="action-btn primary" onclick="startStudentWorksheet()" style="width:100%; font-size:18px;" disabled>⏳ جاري تحميل الورقة...</button>
-                <button type="button" class="action-btn" onclick="showMyHomeworkResults()" style="width:100%;margin-top:10px;background:#0f766e;color:white">🏅 عرض نتائج نقاط واجباتي</button>
-                <button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف في واجبات النقاط المنزلية</button>
-                <div id="myHomeworkResults" style="display:none;margin-top:14px;padding:12px;border-radius:10px;background:#ecfeff;text-align:right"></div>
-            </div>
-            
-            <div class="section" id="stWorkspace" style="display:none; position:relative; text-align:center; padding:20px; background:#f1f5f9; overflow:auto;">
-                <div id="stTimerPanel" style="display:none;position:sticky;top:6px;z-index:20;background:#1e3a8a;color:white;padding:12px;border-radius:10px;margin:0 auto 14px;max-width:360px;font-size:20px;font-weight:900;">⏳ الوقت المتبقي: <span id="stTimerValue">--:--</span></div>
-                <div id="stTimingMessage" style="display:none;color:#b91c1c;font-weight:bold;margin-bottom:10px;"></div>
-                <div style="position:relative; display:inline-block;" id="stImgContainer">
-                    <img id="stImg" style="max-width:100%; display:block; border-radius:10px;" alt="صورة ورقة العمل">
-                    <div id="stFields" style="position:absolute; top:0; left:0; width:100%; height:100%;"></div>
-                </div>
-            </div>
-            <div class="section" id="stSubmitArea" style="display:none; text-align:center;">
-                <button class="action-btn success" onclick="submitStudentAnswers()" style="width:100%; font-size:18px;">✅ إرسال الإجابات</button>
-                <button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف في واجبات النقاط المنزلية</button>
-                <div id="studentHomeworkHonorBoard" style="display:none;margin-top:16px;padding:16px;border-radius:16px;background:linear-gradient(135deg,#fffbeb,#fef3c7);text-align:right"></div>
-            </div>
-            
-            <div class="section" id="stSuccess" style="display:none; text-align:center;">
-                <h1 style="font-size:60px; margin:0;">🎉</h1>
-                <h2 style="color:#16a34a;">تم إرسال إجاباتك بنجاح!</h2>
-                <button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:18px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف في واجبات النقاط المنزلية</button>
-                <div id="studentHomeworkHonorBoardSuccess" style="display:none;margin-top:16px;padding:16px;border-radius:16px;background:linear-gradient(135deg,#fffbeb,#fef3c7);text-align:right"></div>
-            </div>
-        `;
-        document.body.appendChild(studentUI);
-
-        // جلب الورقة من قاعدة البيانات
-        firestoreDb.collection('worksheets').doc(worksheetId).get().then(doc => {
-            if(doc.exists) {
-                window.currentStudentWorksheet = doc.data();
-                document.getElementById('stTitle').innerText = window.currentStudentWorksheet.title || 'ورقة العمل';
-                const startBtn = document.getElementById('stStartBtn');
+    if (titleEl) titleEl.innerText = '⏳ جاري تحميل ورقة العمل...';
+    firestoreDb.collection('worksheets').doc(worksheetId).get().then(doc => {
+        if (doc.exists) {
+            window.currentStudentWorksheet = doc.data();
+            if (titleEl) titleEl.innerText = window.currentStudentWorksheet.title || 'ورقة العمل';
+            if (startBtn) {
                 startBtn.disabled = false;
                 startBtn.textContent = '🚀 ابدأ الإجابة';
-            } else {
-                document.getElementById('stTitle').innerText = '❌ الورقة غير موجودة أو تم حذفها';
-                document.getElementById('stStartBtn').textContent = 'الورقة غير متاحة';
             }
-        }).catch(err => {
-            document.getElementById('stTitle').innerText = '❌ تعذر تحميل بيانات الورقة. تحقق من صلاحيات Firestore والاتصال.';
-            document.getElementById('stStartBtn').textContent = 'تعذر التحميل';
-            console.error('Worksheet Firestore read error:', err);
-        });
-    }
-}, 1000); // انتظار ثانية لضمان تحميل الصفحة
-
+        } else {
+            if (titleEl) titleEl.innerText = '❌ الورقة غير موجودة أو تم حذفها';
+            if (startBtn) {
+                startBtn.disabled = true;
+                startBtn.textContent = 'الورقة غير متاحة';
+            }
+        }
+    }).catch(err => {
+        if (titleEl) titleEl.innerText = '❌ تعذر تحميل بيانات الورقة. تحقق من الاتصال وصلاحيات Firestore.';
+        if (startBtn) {
+            startBtn.disabled = true;
+            startBtn.textContent = 'تعذر التحميل';
+        }
+        console.error('Worksheet Firestore read error:', err);
+    });
+}, 150);
 // أسماء الطلاب الموزعة حسب الصف من ملف Student Names.xlsx
 const STUDENT_NAMES_BY_CLASS = {"السادس 2":["أحمد عمر احمد عبدالرحمن الجهرمى","احمد الامين احمد الامين","احمد على فالح الجمل","احمد غلام احمد تاج كاركشا","السمؤال عبدالمسامح الزين النور","الهادي سمير الحاج عبدالله","انس اشرف انيس شاهين","تميم المعتزبالله عادل احمد البحلس","جاسم احمد صالح عبدالله السحيقى","جاسم محمد فاضل الشقيرى المهندى","حمد محمد فاروق","خالد سعيد عبد الحميد عبد الغفار محمد","خالد عبدالعزيز","خالد محمد خالد القوربه","ريان احمد سفيان الجمل","ريان بشار حمزه","زياد بوحده","سليمان زياد سليمان عبدالخالق","صالح احمد عبدالقادر حموده","صالح عون علي محمد القمش","عمر يونس الشلوت","عناب معتصم اسامه عناب","فهد احمد ابراهيم حمد الطوالبة","مؤتمن منتصر يعقوب عبدالقادر احمد","مالك عزام ذياب عبدالمالك","محمد شوقي قاسم فاضل","محمد عبدالله","محمد عيسى احمد محمد الحمادى","محمد كريم محمد على حسن طه","مسعود احمد مسعود العبري","هزاع جمال علي الجعل","ياسين عماد مسعد حامد الصباغ","يحيى احمد عاطف عبدالسلام العبد"],"السادس 4":["أحمد يوسف أحمد عبد الله العبدلي","أواب ابوالقاسم حسن جادالله","احمد خليفة سالم المحروقي","الياس محمد زين دغمش","باسل عمار ياسر احمد محمود","براء فوزي بلدي","بلال محمد محمد محمد حسين","تميم عبدالله سلطان على العلى","حمزة امير السيد عثمان محمد","حمزه شادى عبدالكريم قاسم","خليفه محمد قائد علي العتولى","راشد احمد راشد على الشرشنى","ضياء الدين هشام النيل سعيد","عبدالله عبدالعزيز على ال شاهين السليطى","عبدالهادى سليمان الهادي اسحق","عمر محمد احمد حسين","غانم يحيى صالح عبدالله العبيدى","فهد عبدالعليم","فواز فيصل ادهام فيصل المهندى","كنان فادي مروان الرواشده","مالك محمد انس الفوال","محمد الخواض محمدالامين محمدنور","محمد سيف الرحمن عبدالمنعم حسين حنفى","محمد عبدالناصر ثابت الفتى","معاذ محمد احمد عواد احمد","ناجي ياسين العلي","نصر موفق نصر جوهره","هيثم علي محمد الرقب","ورد نورالدين العسلى","وليد عاقب فيصل على","يمان عمر محمدعبدالوهاب ابوشريعه","يوسف اشرف مصطفي محمد علي","يوسف عصام يوسف بابكر"],"السادس 6":["احمد علي حسن الصائغ","احمد محمد على سيد","بهاء محمد عبدالحميد الشاقلدي","تميم حسين زين عبدالناصر السعدى","حسام احمد جبريل حبيب","ريان بشير حسن الروسان","سعد بدر عبدالله حسين البلوشى","عاطف الله توصيف الله","عبدالرحمن رشيد عبدالرشيد","عبدالرحمن محمد محمود محمد ابووطفه","عبدالرحمن محمد هيثم محسن","عزالدين محمد عيد زكي على","على ابراهيم سعيد مخيمر","على اسلام على كامل سويفى","علي حسن على سويد المالكى","عمار سعيد محمد علي اسعد","عمر أحمد بدر ابوالمجد النجار","فيصل محمد المحمد الظاهر الحمد","قصي محمد عبدالله عبدالقوي محمد","مبارك خالد مسعود جوهر العبدالله","محمد ديسم منتصر مفتاح","محمد عبدالرحمن على برات حمزوي","محمد عبدالله موسى العبسي","محمد عبدالله يوسف موسى","محمد عمر احمد الشيخ","محمد عمر سالم الزاكى","محمد عمر عبدي","محمد عمر موسى الجراجره","محمد لؤي وسوف","محمد ناهض مسعود الحداد","محمدعثمان زكريا محمد زكريا","هذال فهد سيدهاشم سيدمحمد الهاشمى","يوسف ابراهيم عبدالله حاجى الخورى"]};
 window.populateStudentNames = function() {
