@@ -90,8 +90,10 @@ setTimeout(() => {
 
     if (isStudentMode && worksheetId) {
         // إخفاء لوحة المدير بالكامل
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('mainApp').style.display = 'none';
+        const managerLogin = document.getElementById('loginScreen');
+        const managerApp = document.getElementById('mainApp');
+        if (managerLogin) managerLogin.style.display = 'none';
+        if (managerApp) managerApp.style.display = 'none';
         
         // إخفاء أي مودالات مفتوحة
         document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
