@@ -51,7 +51,7 @@ body{margin:0;background:linear-gradient(135deg,#dbeafe,#c7d2fe);padding:14px;mi
   <input id="stPin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="off" placeholder="أدخل الرقم السري المخصص لك" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;font-size:18px;text-align:center;letter-spacing:8px;margin:10px 0 14px">
   <button id="stStartBtn" class="action-btn primary" onclick="startStudentWorksheet()" style="width:100%" disabled>⏳ جاري تحميل الورقة...</button>
   <button type="button" class="action-btn" onclick="showMyHomeworkResults()" style="width:100%;margin-top:10px;background:#0f766e;color:white">🏅 عرض نتائج نقاط واجباتي</button>
-  <button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف في واجبات النقاط المنزلية</button>
+  <button type="button" class="action-btn" onclick="openDailyChallenge()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#ea580c,#f59e0b);color:white">🔥 تحدي اليوم — فرصة جديدة لجمع النقاط</button>
   <div id="myHomeworkResults" style="display:none;margin-top:14px;padding:12px;border-radius:10px;background:#ecfeff;text-align:right"></div>
  </div>
  <div class="section" id="stWorkspace" style="display:none;position:relative;text-align:center;padding:12px;background:#f1f5f9;overflow:auto">
@@ -61,13 +61,20 @@ body{margin:0;background:linear-gradient(135deg,#dbeafe,#c7d2fe);padding:14px;mi
  </div>
  <div class="section" id="stSubmitArea" style="display:none;text-align:center">
   <button class="action-btn success" onclick="submitStudentAnswers()" style="width:100%">✅ إرسال الإجابات</button>
-  <button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف في واجبات النقاط المنزلية</button>
+  <button type="button" class="action-btn" onclick="openDailyChallenge()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#ea580c,#f59e0b);color:white">🔥 تحدي اليوم</button>
   <div id="studentHomeworkHonorBoard" style="display:none;margin-top:16px;padding:16px;border-radius:16px;background:linear-gradient(135deg,#fffbeb,#fef3c7);text-align:right"></div>
  </div>
  <div class="section" id="stSuccess" style="display:none;text-align:center"><h1 style="font-size:60px">🎉</h1><h2 style="color:#16a34a">تم إرسال إجاباتك بنجاح!</h2><p style="color:#166534;font-weight:bold">تم تسجيل إجابتك. لا يمكن إعادة إرسال هذه الورقة مرة أخرى.</p><button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:18px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف</button><div id="studentHomeworkHonorBoardSuccess" style="display:none;margin-top:16px;padding:16px;border-radius:16px;background:linear-gradient(135deg,#fffbeb,#fef3c7);text-align:right"></div></div>
+ <div class="section" id="dailyChallengePanel" style="display:none;border:2px solid #f59e0b;background:linear-gradient(135deg,#fff7ed,#fffbeb)">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+   <h2 style="color:#c2410c;margin:0">🔥 تحدي اليوم</h2>
+   <button type="button" class="action-btn" onclick="closeDailyChallenge()" style="background:#64748b;padding:8px 12px">إغلاق</button>
+  </div>
+  <div id="dailyChallengeContent" style="margin-top:14px;text-align:right">اضغط «تحميل التحدي» لعرض سؤال اليوم.</div>
+ </div>
 </div>
 <script>
-// Firebase client setup for the dedicated student portal.
+ for the dedicated student portal.
 const firebaseConfig = {
   apiKey: "AIzaSyCAeHOVGUpG7WcPcUh0XtBvmTwLGdcBCJE",
   authDomain: "school-points-qatar.firebaseapp.com",
@@ -378,6 +385,191 @@ window.submitStudentAnswers = async function(autoSubmit=false) {
         alert(error.message||'تعذر إرسال الإجابات.');
         if(btn){btn.disabled=false;btn.textContent='✅ إرسال الإجابات';}
     }
+}
+
+
+
+// ==================== تحدي اليوم: student experience ====================
+window.__dailyChallengeTimer = null;
+window.__dailyChallengeIdentity = null;
+window.__dailyChallengeCurrent = null;
+
+function dailyChallengeClearTimer(){
+ if(window.__dailyChallengeTimer){clearInterval(window.__dailyChallengeTimer);window.__dailyChallengeTimer=null;}
+}
+function dailyChallengeSchoolId(){
+ const params=new URLSearchParams(window.location.search);
+ return String(
+   window.currentStudentWorksheet?.schoolId ||
+   window.currentStudentIdentity?.schoolId ||
+   params.get("schoolId") ||
+   "global"
+ ).trim();
+}
+async function dailyChallengeIdentity(){
+ const cls=String(document.getElementById("stClass")?.value||"").trim();
+ const name=String(document.getElementById("stName")?.value||"").trim();
+ const pin=String(document.getElementById("stPin")?.value||"").trim();
+ if(!cls||!name)throw new Error("اختر الصف واسمك أولاً.");
+ if(!/^\d{4}$/.test(pin))throw new Error("أدخل رقمك السري المكوّن من أربعة أرقام.");
+ const schoolId=dailyChallengeSchoolId();
+ const studentKey=await homeworkSha256(schoolId+"|"+cls+"|"+homeworkNormalizeName(name));
+ const pinHash=await homeworkSha256(studentKey+"|"+pin);
+ const identity={schoolId,studentKey,pinHash,studentName:name,studentClass:cls};
+ window.__dailyChallengeIdentity=identity;
+ window.currentStudentIdentity=identity;
+ return identity;
+}
+function dailyChallengeNode(tag,text,className){
+ const el=document.createElement(tag);
+ if(text!==undefined)el.textContent=String(text);
+ if(className)el.className=className;
+ return el;
+}
+function dailyChallengeShowMessage(text,isError){
+ const host=document.getElementById("dailyChallengeContent");
+ host.replaceChildren();
+ const box=dailyChallengeNode("div",text);
+ box.style.cssText="padding:14px;border-radius:12px;background:"+(isError?"#fee2e2":"#fff")+";color:"+(isError?"#991b1b":"#334155")+";font-weight:bold;line-height:1.8";
+ host.appendChild(box);
+}
+window.openDailyChallenge=async function(){
+ const panel=document.getElementById("dailyChallengePanel");
+ panel.style.display="block";
+ panel.scrollIntoView({behavior:"smooth",block:"start"});
+ await loadDailyChallenge();
+};
+window.closeDailyChallenge=function(){
+ dailyChallengeClearTimer();
+ document.getElementById("dailyChallengePanel").style.display="none";
+};
+window.loadDailyChallenge=async function(){
+ dailyChallengeClearTimer();
+ const host=document.getElementById("dailyChallengeContent");
+ host.textContent="⏳ جارٍ التحقق من بياناتك وتحميل تحدي اليوم...";
+ try{
+  const identity=await dailyChallengeIdentity();
+  const response=await firebase.app().functions("us-central1").httpsCallable("getDailyChallenge")(identity);
+  const data=response?.data||{};
+  if(data.success!==true)throw new Error("لم يؤكد الخادم تحميل التحدي.");
+  if(!data.found){
+    dailyChallengeShowMessage(data.message||"لا يوجد تحدٍ منشور لفصلك اليوم. ترقب تحدي الغد! 🌟",false);
+    return;
+  }
+  window.__dailyChallengeCurrent=data;
+  if(data.attemptState==="submitted"){
+    dailyChallengeRenderResult(data.attemptResult||{},data.challenge);
+    return;
+  }
+  if(data.attemptState==="expired"){
+    dailyChallengeShowMessage("انتهى وقت محاولتك اليومية. حاول مرة أخرى غدًا! 🔥",true);
+    return;
+  }
+  if(data.state==="upcoming"){
+    dailyChallengeShowMessage("⏰ لم يحن موعد فتح التحدي بعد. يبدأ في "+new Date(data.challenge.openAtMillis).toLocaleTimeString("ar-QA",{hour:"2-digit",minute:"2-digit"})+" بتوقيت قطر.",false);
+    return;
+  }
+  if(data.state==="closed"){
+    dailyChallengeShowMessage("انتهى وقت تحدي اليوم. انتظر تحدي الغد! 🌙",false);
+    return;
+  }
+  dailyChallengeRenderIntro(data);
+ }catch(error){
+  console.error("Daily challenge load failed:",error);
+  dailyChallengeShowMessage(error.message||"تعذر تحميل تحدي اليوم.",true);
+ }
+};
+function dailyChallengeRenderIntro(data){
+ const host=document.getElementById("dailyChallengeContent");
+ host.replaceChildren();
+ const c=data.challenge||{};
+ host.appendChild(dailyChallengeNode("div",c.title||"تحدي اليوم"));
+ host.lastChild.style.cssText="font-size:20px;font-weight:900;color:#9a3412;margin-bottom:8px";
+ host.appendChild(dailyChallengeNode("p","سؤال اليوم جاهز! أمامك "+Number(c.durationSeconds||60)+" ثانية للإجابة. الإجابة الصحيحة تمنحك "+Number(c.rewardPoints||0)+" نقطة."));
+ const btn=dailyChallengeNode("button","🚀 ابدأ التحدي الآن");
+ btn.className="action-btn primary";btn.style.cssText="width:100%;background:linear-gradient(135deg,#ea580c,#f59e0b)";
+ btn.onclick=()=>startDailyChallenge();
+ host.appendChild(btn);
+}
+window.startDailyChallenge=async function(){
+ const host=document.getElementById("dailyChallengeContent");
+ try{
+  const identity=window.__dailyChallengeIdentity||await dailyChallengeIdentity();
+  const response=await firebase.app().functions("us-central1").httpsCallable("startDailyChallengeAttempt")(identity);
+  const data=response?.data||{};
+  if(data.alreadyCompleted){
+    dailyChallengeRenderResult({correct:data.correct,awardedPoints:data.awardedPoints},window.__dailyChallengeCurrent?.challenge);
+    return;
+  }
+  if(data.success!==true||!data.challenge)throw new Error("لم يؤكد الخادم بدء التحدي.");
+  dailyChallengeRenderQuestion(data.challenge,data.expiresAtMillis);
+ }catch(error){
+  dailyChallengeShowMessage(error.message||"تعذر بدء التحدي.",true);
+ }
+};
+function dailyChallengeRenderQuestion(challenge,expiresAtMillis){
+ dailyChallengeClearTimer();
+ window.__dailyChallengeCurrent={...(window.__dailyChallengeCurrent||{}),challenge};
+ const host=document.getElementById("dailyChallengeContent");
+ host.replaceChildren();
+ const title=dailyChallengeNode("h3",challenge.title||"تحدي اليوم");title.style.color="#9a3412";host.appendChild(title);
+ const timer=dailyChallengeNode("div","");timer.id="dailyChallengeTimer";timer.style.cssText="padding:10px;text-align:center;background:#1e3a8a;color:#fff;border-radius:10px;font-size:20px;font-weight:bold;margin-bottom:12px";host.appendChild(timer);
+ const question=dailyChallengeNode("p",challenge.question);question.style.cssText="font-size:18px;font-weight:bold;line-height:1.8";host.appendChild(question);
+ const choices=dailyChallengeNode("div");choices.id="dailyChallengeChoices";
+ (challenge.options||[]).forEach((option,index)=>{
+  const label=document.createElement("label");
+  label.style.cssText="display:flex;align-items:center;gap:10px;padding:12px;margin:8px 0;background:#fff;border:1px solid #fed7aa;border-radius:12px;cursor:pointer";
+  const radio=document.createElement("input");radio.type="radio";radio.name="dailyChallengeAnswer";radio.value=option.id;radio.style.cssText="width:20px;height:20px;flex:0 0 20px";
+  const text=dailyChallengeNode("span",option.text);text.style.flex="1";
+  label.append(radio,text);choices.appendChild(label);
+ });
+ host.appendChild(choices);
+ const submit=dailyChallengeNode("button","إرسال الإجابة");
+ submit.className="action-btn success";submit.style.width="100%";submit.id="dailyChallengeSubmit";
+ submit.onclick=submitDailyChallenge;
+ host.appendChild(submit);
+ const tick=()=>{
+  const remaining=Math.max(0,Number(expiresAtMillis)-Date.now());
+  const seconds=Math.ceil(remaining/1000);
+  const el=document.getElementById("dailyChallengeTimer");
+  if(el)el.textContent="⏳ الوقت المتبقي: "+Math.floor(seconds/60)+":"+String(seconds%60).padStart(2,"0");
+  if(seconds<=0){
+    dailyChallengeClearTimer();
+    const btn=document.getElementById("dailyChallengeSubmit");
+    if(btn){btn.disabled=true;btn.textContent="انتهى الوقت";}
+  }
+ };
+ tick();window.__dailyChallengeTimer=setInterval(tick,1000);
+}
+window.submitDailyChallenge=async function(){
+ const selected=document.querySelector('input[name="dailyChallengeAnswer"]:checked');
+ if(!selected){alert("اختر إجابة قبل الإرسال.");return;}
+ const btn=document.getElementById("dailyChallengeSubmit");
+ if(btn){btn.disabled=true;btn.textContent="⏳ جارٍ اعتماد إجابتك...";}
+ dailyChallengeClearTimer();
+ try{
+  const identity=window.__dailyChallengeIdentity||await dailyChallengeIdentity();
+  const response=await firebase.app().functions("us-central1").httpsCallable("submitDailyChallengeAttempt")({...identity,answerOptionId:selected.value});
+  const data=response?.data||{};
+  if(data.success!==true)throw new Error("لم يؤكد الخادم اعتماد الإجابة.");
+  dailyChallengeRenderResult(data,window.__dailyChallengeCurrent?.challenge);
+ }catch(error){
+  dailyChallengeShowMessage(error.message||"تعذر إرسال الإجابة.",true);
+ }
+};
+function dailyChallengeRenderResult(result,challenge){
+ dailyChallengeClearTimer();
+ const host=document.getElementById("dailyChallengeContent");host.replaceChildren();
+ const correct=result.correct===true;
+ const title=dailyChallengeNode("h3",correct?"🎉 إجابة صحيحة! أحسنت يا بطل":"💪 محاولة رائعة! حاول غدًا");
+ title.style.cssText="color:"+(correct?"#15803d":"#b45309")+";text-align:center;font-size:22px";
+ host.appendChild(title);
+ const score=dailyChallengeNode("div",correct?"حصلت على "+Number(result.awardedPoints||0)+" نقطة إضافية 🏆":"لم تحصل على نقاط هذه المرة، لكن التعلم مكسب!");
+ score.style.cssText="text-align:center;font-weight:bold;padding:12px;background:#fff;border-radius:12px;margin:10px 0";
+ host.appendChild(score);
+ const explanation=String(result.explanation||challenge?.explanation||"");
+ if(explanation){const note=dailyChallengeNode("p","💡 "+explanation);note.style.cssText="line-height:1.8;color:#475569";host.appendChild(note);}
+ host.appendChild(dailyChallengeNode("div","اكتمل تحدي اليوم. نراك في تحدي الغد! 🔥")).style.cssText="text-align:center;color:#9a3412;font-weight:bold;margin-top:12px";
 }
 
 
