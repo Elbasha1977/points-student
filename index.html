@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#071B3A">
+<title>POINTS | بوابة الطالب</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js"></script>
+<style>
+*{box-sizing:border-box;font-family:Tahoma,Arial}
+body{margin:0;background:linear-gradient(135deg,#dbeafe,#c7d2fe);padding:14px;min-height:100vh}
+.container{max-width:950px;margin:auto}
+.header{background:white;border-radius:22px;padding:22px;text-align:center;box-shadow:0 5px 20px #0001}
+.header h1{color:#4338ca;margin:0 0 8px}
+.section{background:white;border-radius:18px;padding:20px;margin-top:18px;box-shadow:0 5px 20px #0001}
+.section h2{color:#4338ca;margin:0 0 16px}
+.action-btn{padding:14px 18px;border:0;border-radius:13px;color:#fff;font-size:16px;font-weight:bold;cursor:pointer}
+.action-btn.primary{background:linear-gradient(135deg,#4338ca,#6366f1)}
+.action-btn.success{background:linear-gradient(135deg,#16a34a,#22c55e)}
+.action-btn:disabled{opacity:.55;cursor:not-allowed}
+#stImg{width:100%;max-width:100%;height:auto;display:block;border-radius:10px}
+<style id="student-worksheet-mobile-fix">
+@media (max-width: 600px) {
+  #stWorkspace { padding: 8px !important; overflow-x: hidden !important; }
+  #stImgContainer { display:block !important; width:100% !important; max-width:100% !important; }
+  #stImg { width:100% !important; max-width:100% !important; height:auto !important; }
+  #stFields { width:100% !important; height:100% !important; }
+  #stFields > div { max-width:100%; min-width:0; }
+  #stFields input, #stFields textarea { font-size:clamp(10px,2.5vw,16px) !important; }
+  #stInfoForm, #stSubmitArea { padding:14px !important; }
+}
+</style>
+</style>
+</head>
+<body>
+<div class="container" id="studentPortal">
+ <div class="header"><h1 id="stTitle">⏳ جاري تحميل ورقة العمل...</h1><p>بوابة الطالب — نظام النقاط والتحفيز المدرسي</p></div>
+ <div class="section" id="stInfoForm">
+  <h2>بيانات الطالب</h2>
+  <label style="font-weight:bold;display:block;margin-bottom:6px">اختر الصف:</label>
+  <select id="stClass" onchange="populateStudentNames()" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;font-size:16px;margin-bottom:14px">
+   <option value="">-- اختر الصف --</option>
+   <option value="السادس 2">السادس 2</option><option value="السادس 4">السادس 4</option><option value="السادس 6">السادس 6</option>
+  </select>
+  <label style="font-weight:bold;display:block;margin-bottom:6px">اسمك:</label>
+  <select id="stName" disabled style="width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;font-size:16px;margin-bottom:14px"><option value="">-- اختر الصف أولاً --</option></select>
+  <label style="font-weight:bold;display:block;margin-bottom:6px">الرقم السري الخاص بك (4 أرقام):</label>
+  <input id="stPin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="off" placeholder="أدخل الرقم السري المخصص لك" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;font-size:18px;text-align:center;letter-spacing:8px;margin:10px 0 14px">
+  <button id="stStartBtn" class="action-btn primary" onclick="startStudentWorksheet()" style="width:100%" disabled>⏳ جاري تحميل الورقة...</button>
+  <button type="button" class="action-btn" onclick="showMyHomeworkResults()" style="width:100%;margin-top:10px;background:#0f766e;color:white">🏅 عرض نتائج نقاط واجباتي</button>
+  <button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف في واجبات النقاط المنزلية</button>
+  <div id="myHomeworkResults" style="display:none;margin-top:14px;padding:12px;border-radius:10px;background:#ecfeff;text-align:right"></div>
+ </div>
+ <div class="section" id="stWorkspace" style="display:none;position:relative;text-align:center;padding:12px;background:#f1f5f9;overflow:auto">
+  <div id="stTimerPanel" style="display:none;position:sticky;top:6px;z-index:20;background:#1e3a8a;color:white;padding:12px;border-radius:10px;margin:0 auto 14px;max-width:360px;font-size:20px;font-weight:900">⏳ الوقت المتبقي: <span id="stTimerValue">--:--</span></div>
+  <div id="stTimingMessage" style="display:none;color:#b91c1c;font-weight:bold;margin-bottom:10px"></div>
+  <div style="position:relative;display:inline-block;width:100%" id="stImgContainer"><img id="stImg" alt="صورة ورقة العمل"><div id="stFields" style="position:absolute;top:0;left:0;width:100%;height:100%"></div></div>
+ </div>
+ <div class="section" id="stSubmitArea" style="display:none;text-align:center">
+  <button class="action-btn success" onclick="submitStudentAnswers()" style="width:100%">✅ إرسال الإجابات</button>
+  <button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف في واجبات النقاط المنزلية</button>
+  <div id="studentHomeworkHonorBoard" style="display:none;margin-top:16px;padding:16px;border-radius:16px;background:linear-gradient(135deg,#fffbeb,#fef3c7);text-align:right"></div>
+ </div>
+ <div class="section" id="stSuccess" style="display:none;text-align:center"><h1 style="font-size:60px">🎉</h1><h2 style="color:#16a34a">تم إرسال إجاباتك بنجاح!</h2><p style="color:#166534;font-weight:bold">تم تسجيل إجابتك. لا يمكن إعادة إرسال هذه الورقة مرة أخرى.</p><button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:18px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف</button><div id="studentHomeworkHonorBoardSuccess" style="display:none;margin-top:16px;padding:16px;border-radius:16px;background:linear-gradient(135deg,#fffbeb,#fef3c7);text-align:right"></div></div>
+</div>
+<script>
+// Firebase client setup for the dedicated student portal.
+const firebaseConfig = {
+  apiKey: "AIzaSyCAeHOVGUpG7WcPcUh0XtBvmTwLGdcBCJE",
+  authDomain: "school-points-qatar.firebaseapp.com",
+  projectId: "school-points-qatar",
+  storageBucket: "school-points-qatar.firebasestorage.app",
+  messagingSenderId: "689880020347",
+  appId: "1:689880020347:web:24305b6f89ac3448acb9de"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const firestoreDb = firebase.firestore();
+
+
+// ==================== محرك صفحة الطالب (مدمج) ====================
+// هذا الكود يجعل لوحة المدير تتحول إلى صفحة طالب إذا كان الرابط يحتوي على ?student
+
+setTimeout(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const isStudentMode = urlParams.get('student') === 'true';
+    const worksheetId = urlParams.get('id');
+
+    if (isStudentMode && worksheetId) {
+        // إخفاء لوحة المدير بالكامل
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'none';
+        
+        // إخفاء أي مودالات مفتوحة
+        document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+
+        // إنشاء واجهة الطالب
+        const studentUI = document.createElement('div');
+        studentUI.className = 'container';
+        studentUI.style.display = 'block';
+        studentUI.innerHTML = `
+            <div class="header">
+                <h1 id="stTitle" style="color:#4338ca;">⏳ جاري تحميل الورقة...</h1>
+            </div>
+            <div class="section" id="stInfoForm">
+                <h2>بيانات الطالب</h2>
+                <div style="margin-bottom:15px;">
+                    <label style="font-weight:bold; display:block; margin-bottom:5px;">اختر الصف:</label>
+                    <select id="stClass" onchange="populateStudentNames()" style="width:100%; padding:12px; border-radius:10px; border:1px solid #ccc; font-size:16px;">
+<option value="">-- اختر الصف --</option>
+<option value="السادس 2">السادس 2</option>
+<option value="السادس 4">السادس 4</option>
+<option value="السادس 6">السادس 6</option>
+</select>
+                </div>
+                <div style="margin-bottom:15px;">
+                    <label style="font-weight:bold; display:block; margin-bottom:5px;">اسمك:</label>
+                    <select id="stName" disabled style="width:100%; padding:12px; border-radius:10px; border:1px solid #ccc; font-size:16px;"><option value="">-- اختر الصف أولاً --</option></select>
+                </div>
+                <div style="margin-bottom:15px;">
+                    <label style="font-weight:bold; display:block; margin-bottom:5px;">الرقم السري الخاص بك (4 أرقام):</label>
+                    <input id="stPin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="off" placeholder="أدخل الرقم السري المخصص لك" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;font-size:18px;text-align:center;letter-spacing:8px;">
+                </div>
+                <button id="stStartBtn" class="action-btn primary" onclick="startStudentWorksheet()" style="width:100%; font-size:18px;" disabled>⏳ جاري تحميل الورقة...</button>
+                <button type="button" class="action-btn" onclick="showMyHomeworkResults()" style="width:100%;margin-top:10px;background:#0f766e;color:white">🏅 عرض نتائج نقاط واجباتي</button>
+                <button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف في واجبات النقاط المنزلية</button>
+                <div id="myHomeworkResults" style="display:none;margin-top:14px;padding:12px;border-radius:10px;background:#ecfeff;text-align:right"></div>
+            </div>
+            
+            <div class="section" id="stWorkspace" style="display:none; position:relative; text-align:center; padding:20px; background:#f1f5f9; overflow:auto;">
+                <div id="stTimerPanel" style="display:none;position:sticky;top:6px;z-index:20;background:#1e3a8a;color:white;padding:12px;border-radius:10px;margin:0 auto 14px;max-width:360px;font-size:20px;font-weight:900;">⏳ الوقت المتبقي: <span id="stTimerValue">--:--</span></div>
+                <div id="stTimingMessage" style="display:none;color:#b91c1c;font-weight:bold;margin-bottom:10px;"></div>
+                <div style="position:relative; display:inline-block;" id="stImgContainer">
+                    <img id="stImg" style="max-width:100%; display:block; border-radius:10px;" alt="صورة ورقة العمل">
+                    <div id="stFields" style="position:absolute; top:0; left:0; width:100%; height:100%;"></div>
+                </div>
+            </div>
+            <div class="section" id="stSubmitArea" style="display:none; text-align:center;">
+                <button class="action-btn success" onclick="submitStudentAnswers()" style="width:100%; font-size:18px;">✅ إرسال الإجابات</button>
+                <button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف في واجبات النقاط المنزلية</button>
+                <div id="studentHomeworkHonorBoard" style="display:none;margin-top:16px;padding:16px;border-radius:16px;background:linear-gradient(135deg,#fffbeb,#fef3c7);text-align:right"></div>
+            </div>
+            
+            <div class="section" id="stSuccess" style="display:none; text-align:center;">
+                <h1 style="font-size:60px; margin:0;">🎉</h1>
+                <h2 style="color:#16a34a;">تم إرسال إجاباتك بنجاح!</h2>
+                <button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:18px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف في واجبات النقاط المنزلية</button>
+                <div id="studentHomeworkHonorBoardSuccess" style="display:none;margin-top:16px;padding:16px;border-radius:16px;background:linear-gradient(135deg,#fffbeb,#fef3c7);text-align:right"></div>
+            </div>
+        `;
+        document.body.appendChild(studentUI);
+
+        // جلب الورقة من قاعدة البيانات
+        firestoreDb.collection('worksheets').doc(worksheetId).get().then(doc => {
+            if(doc.exists) {
+                window.currentStudentWorksheet = doc.data();
+                document.getElementById('stTitle').innerText = window.currentStudentWorksheet.title || 'ورقة العمل';
+                const startBtn = document.getElementById('stStartBtn');
+                startBtn.disabled = false;
+                startBtn.textContent = '🚀 ابدأ الإجابة';
+            } else {
+                document.getElementById('stTitle').innerText = '❌ الورقة غير موجودة أو تم حذفها';
+                document.getElementById('stStartBtn').textContent = 'الورقة غير متاحة';
+            }
+        }).catch(err => {
+            document.getElementById('stTitle').innerText = '❌ تعذر تحميل بيانات الورقة. تحقق من صلاحيات Firestore والاتصال.';
+            document.getElementById('stStartBtn').textContent = 'تعذر التحميل';
+            console.error('Worksheet Firestore read error:', err);
+        });
+    }
+}, 1000); // انتظار ثانية لضمان تحميل الصفحة
+
+// أسماء الطلاب الموزعة حسب الصف من ملف Student Names.xlsx
+const STUDENT_NAMES_BY_CLASS = {"الخامس 1":["اسماعيل ابراهيم","اصف رامي محجوب ابراهيم","اياد عبدالعزيز محمد المبارك","بشر رمضان","تيم حمد","خالد عبدالستار احمد مثنى الكريحى","راشد نور عنبر مسك","رسلان محمد الشريف","سيف علي أحمد المومني","عبدالرحمن علي عثمان","عبدالله سالمي","عبدالله على عبدالله منصور المرهون","عدنان خالد","على الحسن على محمد على","علي سلمان ناصر جاسم النجار","علي يوسف علي حسن الانصاري","عمر باسم محمد ابو غاليه","عمر عبدالله مصطفى ادغيم","غيث معتصم اسامه عناب","مازن ماجد محمد ابرهيم","مالك محمد سالم حسن ابراهيم","محمد عبدالله ربيع جندب الشعيبي","محمد فؤاد طه حرب","محمد مدحت جمال احمد نصار","محمد معاذ نزر","محمد وائل صلاح سعيد زهران","محمد وسام محمد الشلالفه","محمود خالد حامد سالمان محمد","مصطفى هشام محمد حسن عبدالغفار","ياسر حسين","ياسين احمد ابراهيم محمود السيد","يوسف محمد ثابت مسلم ابودوح","يوسف محمد سردا"],"الخامس 2":["أسامة محمد محمد ابراهيم الرفاعى","احمد التجاني محمد عبدالله","احمد حسني السيد عمر محمد","ادم عبدة مصطفى محمود محمد","اصيل احمد سليمان بني خالد","امين محمد ابوالسعود علي كتانه","اوس عروه عبدالرحمن الصمادى","اياد دحان احمد مسعد الشيبه","ايهاب اسامه صالح احمد","تميم مروان عوض الرزوق","جمال هاني تاج السر محمد احمد","خالد محمد علي محمد","خالد موليد على عبدالله","سلطان فريد غلامزاده","سلمان محمد فرحان شديد الدوسرى","سيدالمختار الشيخ الحضرامي","عباس علي عباس البلوله","عبد العزيز يونس الشلوت","عبدالرحمن علي محمد","عبدالله التمرو","عبدالله حمد السيد","عبدالله ناصر احمد نعمه النعمه","علي العمرو","علي نبيل صابر علي امين","عمر محمد عوض الطيب","ماجد مرشد حزام مرشد التبالي","مالك سعيد عبدالعزيز حسن فاطمه","محمد طاهر سمير حطاب","محمد مبارك جابر حسن الجابر","محمد ياسر محمد أحمد","يامن صلاح عبد الرحيم بني عطا","يحيى اكرم جزاع الكفاوين","يس محمد الصديق محمد صالح"],"الخامس 3":["أمجد أحمد محمود عبدالقادر علي","أوس حسام الحريري","احمد الطيب احمد عبدالرحمن","احمد حمزه حجي السليم","ادم سامر جبر ابو لبده","امير اكرم يوسف الصالحي","تيم فؤاد بخيت حوراني","حسن علي حسن مجغف","حمد طلال عباد يحيى حسين","خالد ثابت الجميره","خليفة حمد يوسف حسين الزبيرى","رياض بوحدة","سيف سامر احمد على البلوشى","عبدالحميد محمد عبدالحميد محمد احمد","عبدالرحمن السلوم","عبدالكريم عبود رجاء","عبدالله جبران محمد حنيف","عبدالله خالد صالح مبارك الحميدى","عدى حاتم محمد صقر","علاء ماجد عبده محمد الجبلي","علي محسن صالح محمد التام","عمر حسين","فرحان محمد فؤاد","كريم عمرو علي اسماعيل علي الجزار","محمد جاسم","محمد عبدالرحمن زقوت","مصطفى احمد مصطفى حسن سيد","معاذ محمد سمحى تهامى عبداللطيف","مهدي انس الاحمد","ناصر احمد عبيد احمد الصديقى","ياسر زاهد رحمان","يوسف اسلام ربيع عيسى احمد","يوسف خالد حسن عبده"],"الخامس 4":["احمد طاهر محمد حنيف","احمد علي صالح علي العبد","المجد عبدالحميد عمران عربيات","باسل محمد ادم عبدالعزيز","تاج الدين ايمن علي حراحشه","تميم خالد الفاتح عبدالمنعم","تيسير عدنان ابو خالد","راشد احمد سعيد الزبون","راشد محمد عيد احمد خليل","ساجد محمد احمد الطيب محمد","سلطان زايد احمد محمد عبدالرب","عبد الرحمن خالد الشبيب","عبدالرحمن عمر ادريس حامد","عبدالعزيز سحيم عزيز الخالق","عبدالعزيز على محمد فرج عبدالله","عبدالله حامد ابراهيم ابراهيم","عبدالله محمد ناصر احمد الشيبه","علي طلال عبد القادر علي","غسان طارق محجوب محمد","محمد عاصم احمد ادم","محمد علي محمد الهناندة","محمد فواد ابراهيم حسان","محمد معارج نزر","مرتقى عزت الطيب عطية الله","معاذ صالح عمر سراج","ناصر فيصل محمد ابراهيم العبدالله","هاني احمد محمود محمد العزب","يحيى جاسم","يزن البشير يوسف البشير","يزيد صفوت علي عمر علي","يوسف حامد عبدالمنعم بابكر","يوسف فهد يوسف محمد العبيدلى","يوسف وليد محمد علي العنسي"],"الخامس 5":["ابراهيم برير التوم الشيخ النور","ابراهيم خليل","احمد محمد احمد قاسم","احمد محمد فوزى رمضان عبدالوهاب","احمد مصطفى عبده احمد رمضان","ادم محمدزين دغمش","ادم محمود سعد مصطفى القاضي","تركي احمد محمد علي عون الله","تميم راشد محمد اسحاق حسين","تميم ناصر فالح عبدالله الدوسرى","ثامر ناجي علي ناجي العقر","حسام محمد عبدالتواب رزق عبدالجواد","سالم حمد سالم جابر مشعاب","سيف الله محمد سالم احمد صالح","سيف نبيل منسى ابراهيم يوسف","عامر عبدالناصر عبدالحكم كفراوي عبدالعال","عبدالرحمن رشاد عبدالله على سالم","عبدالله محمد تيسير محمد العطار","عبدالله محمد عثمان حسيني العزب","عزالدين حسان احمد ابوشمله","علي احمد درويش","عمر راشد احمدى كلنكى","عمر وليد اسماعيل على مرجان","كرم اسامه جميل ابو الندى","مازن محمد مدحت السيد محمود","مالك خالد محمد جمال الدين عبدالعزيز","محمد المجتبي الامين احمد محمد","محمد عبدالعظيم تاج السر مكاوي","مشعل جمعان منيف ناجي الشرفى","نزار معاويه محمد بشاره","هاشم عمر هاشم عبدالرحمن","هاشم مالك محمد الطويل","يزن مجدي عرفات علي ابو رجب"],"الخامس 6":["ارام محسن احمد","اسحيم داود على احمد حسين","البراء عمر محمد ابو قديري","المجد مؤنس فيصل الخطيب","الياس محمد سليمان زعارير","تيم مظفر الحمدان","حمد محمد محمد ناصر الرياشى","حمزة رمضان ابوالعزم احمد الفرت","حمزه فراس دبيس","خالد ابراهيم قايد زين كريب","خالد سنان عبدالله الهلالات","راكان اشرف زهدي ابوعفيفه","ريان محمود علي عميره","صهيب رائد محمد بني مفرج","عاصم سيد سليمان عبدالعليم","عبداللطيف محمد عيسى محمد الشاعر","علي غصوب السعيفان","علي محمد علي غلوم العجمي","عمر هيثم راشد صالح الهاشمي","فارس محمد جمال جابر محمد","فهد على محمد","قصي محمد معتوق","محمد اسامه فتحى ابو الحسن محمد حمزه","محمد اسامه فوزي عبيدات","محمد اسامه ناجح ابونصره","محمد وليد النور عبدالرحمن","محمد ياسر ابراهيم نمر دوله","منيف الحافظ","موفق سالم اعسر","ناصر عبدالله ناصر عبدالله العمادى","نبيل اسماعيل ضيف الله معيض","يزيد محمد مصطفى عبدالحميد ايوب","يوسف محمد جميل"],"الخامس 7":["ابوبكر ابراهيم اسماعيل عوض","احمد شريف محمود محمد محمود","احمد عمر عبدالغفار الدويك","احمد ياسر عرفات محمد صباح الخير","اسلام محمد انس حسان احمد","امير زيد نواف الدويري","جاسم محمد ايوب","جاسم محمد عبدالمحسن الصالح","حامد جاسم عبدالخالق محمد","حمد عبدالله محمد عبدالله العمادى","حمد فضاله مبارك الفضاله السليطى","خالد عبدالرحمن ناصر أحمد البكري","خالد عمر عبدالرحمن","خليل محمد خليل طباشه","راكان رحمة الله","زيد انيس جميل العمري","سيف الدين احمد محمد صابر عكاشه","صالح محمد عيسى محمد الشاعر","طارق زياد محمد قاسم","عبدالعزيز زايد نور احمد نور","عبدالله هانى محمد صبرى اسماعيل","قيس احمد جميل ربابعه","مالك اشرف هاشم غريب","محمد ابراهيم حمدي رفاعي فرج","محمد خالد سعيد غابش الخميسي","محمد عبدالحكيم يوسف صالحي الهاشمي","محمد عبدالمنعم محمد الشيخ","محمد عمر غازي يوسف","محمد فائز رمضان عبدالله","محمد هيثم محمد عثمان","محمود غانم محمد ابراهيم","منصور محمود محمد عبد العال حسن","موفق بلال بسرك"],"السادس 1":["أحمد بابكر تاج الدين صغيرون","أحمد محمود عبدالوهاب عبدالحليم عرابي","احمد سامح حلمى عوض عبدالباقى","احمد مروان الياس علي محمد","احمدجاد محمدانور الزعيم","انس احمد حمدى محمود ابوقتله","اياد محمد عبدالجواد جاد محمود","تميم ماهر السر محمدخير","تميم هشام رجب احمد محمود","جاسم محمد ناصر سليم الحجري","حمدان بشير احمد","حميدي حمد خضر","سعود جاسم جمعه محمد الفجيرى","عبدالعزيز خليل الرحمن عبدالحنان","علي سيف جاسم مجبل السليطى","علي يلدز","فهد جاسم بدر جاسم الحاى","فهد رائد حمود سلوم الجميلي","قصي محمد عباس يوسف","مالك عامر صالح احمد الحامد","محمد أحمد بشير محمود زعرب","محمد السيد محمود على الشربيني","محمد ايسم مهران القاسمي","محمد عبدالعزيز كرمى","محمد عبدالوهاب بابكر حسن","محمد عيد محمد ابوجسوم البدر","مهدي أكرم المحرسي","مهند محمود ابراهيم ماضي","ميار علاء الحريري","وضاح على موسى احمد احمد","يزن محمد شعبان عيد حمتو","يوسف سغاله","يوسف محمد جاكرى"],"السادس 2":["أحمد عمر احمد عبدالرحمن الجهرمى","احمد الامين احمد الامين","احمد على فالح الجمل","احمد غلام احمد تاج كاركشا","السمؤال عبدالمسامح الزين النور","الهادي سمير الحاج عبدالله","انس اشرف انيس شاهين","تميم المعتزبالله عادل احمد البحلس","جاسم احمد صالح عبدالله السحيقى","جاسم محمد فاضل الشقيرى المهندى","حمد محمد فاروق","خالد سعيد عبد الحميد عبد الغفار محمد","خالد عبدالعزيز","خالد محمد خالد القوربه","ريان احمد سفيان الجمل","ريان بشار حمزه","زياد بوحده","سليمان زياد سليمان عبدالخالق","صالح احمد عبدالقادر حموده","صالح عون علي محمد القمش","عمر يونس الشلوت","عناب معتصم اسامه عناب","فهد احمد ابراهيم حمد الطوالبة","مؤتمن منتصر يعقوب عبدالقادر احمد","مالك عزام ذياب عبدالمالك","محمد شوقي قاسم فاضل","محمد عبدالله","محمد عيسى احمد محمد الحمادى","محمد كريم محمد على حسن طه","مسعود احمد مسعود العبري","هزاع جمال علي الجعل","ياسين عماد مسعد حامد الصباغ","يحيى احمد عاطف عبدالسلام العبد"],"السادس 3":["أحمد عبدالله احمد عبدالله المطوع","أنس امير السيد عثمان محمد","ابراهيم محمد عبدالعزيز عيسى عمرو","ابوبكر يعقوب محمدالحبيب الامين","احمد قاسم احمد سعيد النوفلي","احمد محمد احمد محمد صالح","ادم عبدالله شيخ دين","تيسير محمد تيسير العطار","تيم حميد نزار كعوش","جادالرحمن رأفت محمد ابوسليم","حسين على احمدى","حمد خالد رحيل معيوف الشمرى","حمد سعيد يوسف عبدالله حاجى","حمد صالح عيسى احمد","حمزه محمد لعرج شيبى محمد","خالد محمد فاروق سلامة الاسمر","راشد زين احمد زين","ساجي عبدالرحيم عبدالله حميدة احمد","سعيد ابراهيم سعيد عبدالسميع مخيمر","سيف صلاح الدين على احمد الجنابي","عبدالرحمن امير خلوف","عبدالرحمن محمد محمد عبدالرازق جمعه","عبدالله حمد سالم راشد ابوشارب","علي عبداللة علي بادار","علي محمد رجب عبدالعزيز أحمد","عمر عبدالله االسالك","عيسى محمد يوسف حكيم خان","محمد عتيق محمد العتيق الدوسرى","ناصـر يسلم سالم بدر جحاف","نايف الدين امام الدين","ياسين احمد مصطفى عبدالجليل يس","يوسف محمد احمد محمد عبدالحميد"],"السادس 4":["أحمد يوسف أحمد عبد الله العبدلي","أواب ابوالقاسم حسن جادالله","احمد خليفة سالم المحروقي","الياس محمد زين دغمش","باسل عمار ياسر احمد محمود","براء فوزي بلدي","بلال محمد محمد محمد حسين","تميم عبدالله سلطان على العلى","حمزة امير السيد عثمان محمد","حمزه شادى عبدالكريم قاسم","خليفه محمد قائد علي العتولى","راشد احمد راشد على الشرشنى","ضياء الدين هشام النيل سعيد","عبدالله عبدالعزيز على ال شاهين السليطى","عبدالهادى سليمان الهادي اسحق","عمر محمد احمد حسين","غانم يحيى صالح عبدالله العبيدى","فهد عبدالعليم","فواز فيصل ادهام فيصل المهندى","كنان فادي مروان الرواشده","مالك محمد انس الفوال","محمد الخواض محمدالامين محمدنور","محمد سيف الرحمن عبدالمنعم حسين حنفى","محمد عبدالناصر ثابت الفتى","معاذ محمد احمد عواد احمد","ناجي ياسين العلي","نصر موفق نصر جوهره","هيثم علي محمد الرقب","ورد نورالدين العسلى","وليد عاقب فيصل على","يمان عمر محمدعبدالوهاب ابوشريعه","يوسف اشرف مصطفي محمد علي","يوسف عصام يوسف بابكر"],"السادس 5":["ابراهيم عاصم احمد ادم","احمد نورالدين حسين عبدالحليم","امان الله عماد الجمني","حسن محمد حسن محمد السليطى","حسين مراد رحمانيان كوشككى","حمد ادريس فضل رحمان","حمزة احمد جمال محروس حداد","حمزة صبري محمد السيد خير","حمزة هايل مثنى علي الابارة","خالد بخيت مسلم بخيت المهري","راغب محمد غازي الاكشر","رامي محمد قسم السيد الصديق","سيف ابراهيم محمود بدران","عبدالرحمن فؤاد يوسف اسماعيل شقوره","عبدالرحمن وسام عبدالرحمن خليل","عبدالعزيز الحسن علي محمد علي","عبدالله احمد مراد امين","عدي هيثم اسماعيل العداسي","علي محمد محمد ناصر الرياشى","عمر أمين محمد حسين قاسم","فهد خالد فيصل الرمزانى النعيمى","فهد وليد","مؤمن منتصر يعقوب عبدالقادر احمد","ماجد فضل محسن عوض حسن","محمد ابوعبيدة آدم شيخ الأمين","محمد احمد الطيب محمد احمد","محمد صلاح سيدهاشم سيدمحمد الهاشمى","محمد عوض الله الطيب ابراهيم","محمد معاذ هاشم بشير","مصطفى محمد ياسين","مهند محمد بكرى ياسين طه","ناصر منير عبدربه حسن احمد","يحيى الدفراوى عبدالفتاح عبدالحميد"],"السادس 6":["احمد علي حسن الصائغ","احمد محمد على سيد","بهاء محمد عبدالحميد الشاقلدي","تميم حسين زين عبدالناصر السعدى","حسام احمد جبريل حبيب","ريان بشير حسن الروسان","سعد بدر عبدالله حسين البلوشى","عاطف الله توصيف الله","عبدالرحمن رشيد عبدالرشيد","عبدالرحمن محمد محمود محمد ابووطفه","عبدالرحمن محمد هيثم محسن","عزالدين محمد عيد زكي على","على ابراهيم سعيد مخيمر","على اسلام على كامل سويفى","علي حسن على سويد المالكى","عمار سعيد محمد علي اسعد","عمر أحمد بدر ابوالمجد النجار","فيصل محمد المحمد الظاهر الحمد","قصي محمد عبدالله عبدالقوي محمد","مبارك خالد مسعود جوهر العبدالله","محمد ديسم منتصر مفتاح","محمد عبدالرحمن على برات حمزوي","محمد عبدالله موسى العبسي","محمد عبدالله يوسف موسى","محمد عمر احمد الشيخ","محمد عمر سالم الزاكى","محمد عمر عبدي","محمد عمر موسى الجراجره","محمد لؤي وسوف","محمد ناهض مسعود الحداد","محمدعثمان زكريا محمد زكريا","هذال فهد سيدهاشم سيدمحمد الهاشمى","يوسف ابراهيم عبدالله حاجى الخورى"],"السادس 7":["أحمد ابراهيم مهدى منصور المرهون","ابراهيم عبدالله حسن الصائغ","ابراهيم هشام ابراهيم عوض موسى","احمد سامح موسى محمد سعيد","احمد علاء عزام بطاينه","اسر موسى صلاح علي عبدالعزيز","اوس محمد مصطفى محمد البيك","اياد زاهد عثمان حسن","براء فيصل البريني","تميم رياض محمد وارث خان","تميم عبدالعليم محمد شلبي","جابر منصور على محمد اسلم","حازم عمر محمد عبدالنبى حبيب","حمد عبدالله مسعد طاهر الاشول","خالد يوسف محمد محمود مقداد","سعد فيصل محمد عبدالله الانصارى","طارق مهدي العلواني","عبدالرحمن حمد جاسم المحيمد","عبدالعزيز نادر محمد اليافعي","عبدالوهاب فائز رمضان عبدالله","على مراد رحمانيان كوشككى","علي سالم صالح سعيدان المرى","عمر ابراهيم المحمد الذياب","عمر احمد محمد عبدالفتاح عبدالمقصود","عمر محمد علي ابو عايشه","محمد امير السيد عثمان محمد","محمد عبدالسلام محمد قايد ضيف الله","محمداويس رامي الزعبي","منصور على عبدالله منصور المرهون","يحيى موفق محمود عنانزه","يوسف ابراهيم عبدالله حاجى الخورى","يوسف شمس  الرحمن زايداك بادشاه","يوسف عبدالقادر محمد عبدالرب السعدى","يوسف هاني تنبان"]};
+window.populateStudentNames = function() {
+  const cls = document.getElementById('stClass').value;
+  const nameSelect = document.getElementById('stName');
+  nameSelect.innerHTML = '';
+  if (!cls || !STUDENT_NAMES_BY_CLASS[cls]) {
+    nameSelect.disabled = true;
+    nameSelect.innerHTML = '<option value="">-- اختر الصف أولاً --</option>';
+    return;
+  }
+  nameSelect.disabled = false;
+  nameSelect.innerHTML = '<option value="">-- اختر اسم الطالب --</option>';
+  STUDENT_NAMES_BY_CLASS[cls].forEach(name => {
+    const option = document.createElement('option');
+    option.value = name; option.textContent = name;
+    nameSelect.appendChild(option);
+  });
+};
+// دوال الطالب
+async function homeworkSha256(value) {
+    const bytes = new TextEncoder().encode(String(value));
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+function homeworkNormalizeName(value) {
+    return String(value || '').trim().replace(/\s+/g,' ').toLowerCase();
+}
+window.__worksheetTimerHandle = null;
+window.__worksheetTimeExpired = false;
+function stopStudentWorksheetTimer(){
+    if(window.__worksheetTimerHandle){clearInterval(window.__worksheetTimerHandle);window.__worksheetTimerHandle=null;}
+}
+function runStudentWorksheetTimer(expiresAtMillis){
+    stopStudentWorksheetTimer();
+    const panel=document.getElementById('stTimerPanel');
+    const value=document.getElementById('stTimerValue');
+    if(!panel||!value||!Number.isFinite(Number(expiresAtMillis)))return;
+    panel.style.display='block';
+    const tick=()=>{
+        const left=Math.max(0,Math.ceil((Number(expiresAtMillis)-Date.now())/1000));
+        value.textContent=String(Math.floor(left/60)).padStart(2,'0')+':'+String(left%60).padStart(2,'0');
+        if(left<=0){
+            stopStudentWorksheetTimer();
+            window.__worksheetTimeExpired=true;
+            const msg=document.getElementById('stTimingMessage');
+            if(msg){msg.style.display='block';msg.textContent='انتهى وقت المحاولة. جارٍ إرسال إجاباتك تلقائيًا.';}
+            window.submitStudentAnswers(true);
+        }
+    };
+    tick();window.__worksheetTimerHandle=setInterval(tick,1000);
+}
+window.startStudentWorksheet = async function() {
+    const cls = document.getElementById('stClass').value;
+    const name = document.getElementById('stName').value;
+    const pin = (document.getElementById('stPin') && document.getElementById('stPin').value || '').trim();
+    const startBtn=document.getElementById('stStartBtn');
+    if(!cls || !name) return alert('الرجاء اختيار الصف واسم الطالب من القائمة');
+    if(!/^\d{4}$/.test(pin)) return alert('أدخل الرقم السري المكوّن من 4 أرقام.');
+    if(!window.currentStudentWorksheet || !window.currentStudentWorksheet.imageUrl) return alert('لم يتم تحميل صورة ورقة العمل بعد. يرجى تحديث الصفحة والمحاولة مرة أخرى.');
+    const schoolId = String(window.currentStudentWorksheet.schoolId || 'global');
+    const studentKey = await homeworkSha256(schoolId + '|' + cls + '|' + homeworkNormalizeName(name));
+    const pinHash = await homeworkSha256(studentKey + '|' + pin);
+    const worksheetId = new URLSearchParams(window.location.search).get('id');
+    if (!worksheetId) return alert('تعذر تحديد ورقة العمل. افتح الرابط المرسل من المعلم مرة أخرى.');
+    if(startBtn){startBtn.disabled=true;startBtn.textContent='⏳ جارٍ التحقق من الموعد والرقم السري...';}
+    try {
+        // يتحقق الخادم مباشرة من student_access عبر Admin SDK؛ لا نحتاج كتابة
+        // سجل student_pin_checks من جهاز الطالب في كل محاولة.
+        const callable=firebase.app().functions('us-central1').httpsCallable('startStudentWorksheetAttempt');
+        const response=await callable({worksheetId,schoolId,studentKey,pinHash,studentName:name,studentClass:cls});
+        const result=response&&response.data?response.data:{};
+        if(result.success!==true)throw new Error('لم يؤكد الخادم بدء المحاولة.');
+        window.currentStudentIdentity={schoolId,studentKey,pinHash,studentName:name,studentClass:cls};
+        window.currentStudentAttemptId=String(result.attemptId||'');
+        window.__worksheetTimeExpired=false;
+        document.getElementById('stInfoForm').style.display='none';
+        document.getElementById('stWorkspace').style.display='block';
+        document.getElementById('stSubmitArea').style.display='block';
+        if(result.expiresAtMillis)runStudentWorksheetTimer(Number(result.expiresAtMillis));
+        const img=document.getElementById('stImg');
+        img.onload=()=>{
+            const fieldsDiv=document.getElementById('stFields');fieldsDiv.innerHTML='';
+            window.currentStudentWorksheet.fields.forEach(f=>{
+                const el=document.createElement('div');
+                const renderedImage=document.getElementById('stImg');
+                const editorWidth=Number(window.currentStudentWorksheet.editorImageWidth||0);
+                const scale=(renderedImage&&editorWidth>0)?renderedImage.clientWidth/editorWidth:1;
+                const fieldWidth=Number(f.wPct)>0?f.wPct+'%':(Number(f.w||0)*scale)+'px';
+                const fieldHeight=Number(f.hPct)>0?f.hPct+'%':(Number(f.h||0)*scale)+'px';
+                el.style.cssText=`position:absolute;box-sizing:border-box;background:#fef08a;border:2px dashed #ca8a04;border-radius:5px;display:flex;align-items:center;justify-content:center;left:${f.x}%;top:${f.y}%;width:${fieldWidth};height:${fieldHeight};max-width:100%;overflow:hidden;`;
+                let inputHtml='';
+                if(f.type==='short_text')inputHtml=`<input type="text" id="${f.id}" style="box-sizing:border-box;width:100%;height:100%;min-width:0;border:none;background:transparent;text-align:center;font-weight:bold;outline:none;font-size:clamp(10px,2.5vw,16px);">`;
+                else if(f.type==='long_text')inputHtml=`<textarea id="${f.id}" style="box-sizing:border-box;width:100%;height:100%;min-width:0;border:none;background:transparent;resize:none;outline:none;padding:3px;font-size:clamp(10px,2.5vw,16px);"></textarea>`;
+                else inputHtml=`<input type="text" id="${f.id}" style="box-sizing:border-box;width:100%;height:100%;min-width:0;border:none;background:transparent;text-align:center;font-weight:bold;outline:none;font-size:clamp(10px,2.5vw,16px);">`;
+                el.innerHTML=inputHtml;fieldsDiv.appendChild(el);
+            });
+        };
+        img.onerror=()=>{
+            stopStudentWorksheetTimer();document.getElementById('stWorkspace').style.display='none';document.getElementById('stSubmitArea').style.display='none';document.getElementById('stInfoForm').style.display='block';
+            document.getElementById('stTitle').innerText='❌ تعذر عرض الصورة. تحقق من رابط الصورة وصلاحيات Firebase Storage.';
+            alert('تعذر تحميل صورة الورقة. قد يكون رابط Firebase Storage غير صالح أو لا يسمح بالوصول.');
+        };
+        img.src=window.currentStudentWorksheet.imageUrl;
+    } catch(error) {
+        console.error('Student worksheet start error:',error);
+        alert(error.message||'تعذر بدء الاختبار.');
+        if(startBtn){startBtn.disabled=false;startBtn.textContent='🚀 ابدأ الإجابة';}
+    }
+};
+
+window.showMyHomeworkResults = async function(){
+ const cls=document.getElementById('stClass').value, name=document.getElementById('stName').value;
+ const pin=(document.getElementById('stPin')&&document.getElementById('stPin').value||'').trim();
+ const box=document.getElementById('myHomeworkResults'); box.style.display='block';
+ if(!cls||!name){box.innerHTML='<b style="color:#b91c1c">اختر الصف واسمك أولاً لعرض نتائجك.</b>';return;}
+ if(!/^\d{4}$/.test(pin)){box.innerHTML='<b style="color:#b91c1c">أدخل رقمك السري المكوّن من أربعة أرقام للتحقق من هويتك.</b>';return;}
+ box.innerHTML='⏳ جارٍ التحقق من هويتك وتحميل نتائجك...';
+ try{
+  // لا نعتمد على جلسة فتح ورقة العمل؛ يمكن للطالب التحقق مباشرة عند طلب عرض النتائج.
+  let identity=window.currentStudentIdentity;
+  if(!identity||identity.studentClass!==cls||identity.studentName!==name||identity.pinHash!==await homeworkSha256(identity.studentKey+'|'+pin)){
+    const schoolId=String((window.currentStudentWorksheet&&window.currentStudentWorksheet.schoolId)||'global');
+    const studentKey=await homeworkSha256(schoolId+'|'+cls+'|'+homeworkNormalizeName(name));
+    const pinHash=await homeworkSha256(studentKey+'|'+pin);
+    identity={schoolId,studentKey,pinHash,studentName:name,studentClass:cls};
+  }
+  const callable=firebase.app().functions('us-central1').httpsCallable('getStudentHomeworkResults');
+  const response=await callable({studentKey:identity.studentKey,pinHash:identity.pinHash,schoolId:identity.schoolId,studentClass:identity.studentClass,studentName:identity.studentName});
+  window.currentStudentIdentity=identity;
+  const items=(response&&response.data&&Array.isArray(response.data.results))?response.data.results:[];
+  if(!items.length){box.innerHTML='<b>لا توجد نتائج منشورة لك حتى الآن.</b>';return;}
+  box.innerHTML='<h3 style="margin-top:0;color:#0f766e">نتائجك المعتمدة</h3>'+items.map(x=>'<div style="padding:9px;margin:7px 0;background:white;border-radius:8px;border:1px solid #99f6e4"><b>'+safeStudentResult(x.worksheetTitle)+'</b><div>الدرجة: <b>'+Number(x.score||0)+' / '+Number(x.maxScore||0)+'</b></div><div style="color:#047857;font-weight:bold">✔ تمت إضافة النقاط إلى رصيدك</div></div>').join('');
+ }catch(e){box.innerHTML='<span style="color:#b91c1c">تعذر تحميل النتائج: '+safeStudentResult(e.message||e)+'</span>';}
+};
+function safeStudentResult(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+
+window.showStudentHomeworkHonorBoard = async function(period) {
+  const cls = document.getElementById('stClass')?.value || window.currentStudentIdentity?.studentClass || '';
+  const name = document.getElementById('stName')?.value || window.currentStudentIdentity?.studentName || '';
+  const pin = (document.getElementById('stPin')?.value || '').trim();
+
+  // اختر صندوق العرض الموجود داخل القسم الظاهر فعلياً.
+  // لا نستخدم أول ID مباشرة لأن صناديق الأقسام الأخرى موجودة في DOM وهي مخفية.
+  const isVisible = (el) => {
+    if (!el) return false;
+    const style = window.getComputedStyle(el);
+    return style.display !== 'none' && style.visibility !== 'hidden' &&
+           el.getClientRects().length > 0;
+  };
+  const successSection = document.getElementById('stSuccess');
+  const submitSection = document.getElementById('stSubmitArea');
+  let box = null;
+  if (isVisible(successSection)) {
+    box = document.getElementById('studentHomeworkHonorBoardSuccess');
+  } else if (isVisible(submitSection)) {
+    box = document.getElementById('studentHomeworkHonorBoard');
+  } else {
+    box = document.getElementById('myHomeworkResults');
+  }
+  if (!box) return;
+  box.style.display = 'block';
+  if (!cls || !name) {
+    box.innerHTML = '<b style="color:#b91c1c">اختر الصف واسمك أولاً.</b>';
+    return;
+  }
+  if (!/^\d{4}$/.test(pin) && !window.currentStudentIdentity?.pinHash) {
+    box.innerHTML = '<b style="color:#b91c1c">أدخل رقمك السري المكوّن من أربعة أرقام للتحقق من هويتك.</b>';
+    return;
+  }
+  const selectedPeriod = period || 'weekly';
+  box.innerHTML = '⏳ جارٍ التحقق من هويتك وتحميل لوحة الشرف...';
+  try {
+    let identity = window.currentStudentIdentity;
+    const schoolId = String((window.currentStudentWorksheet && window.currentStudentWorksheet.schoolId) || identity?.schoolId || 'global');
+    if (!identity || identity.studentClass !== cls || identity.studentName !== name ||
+        (pin && identity.pinHash !== await homeworkSha256(identity.studentKey + '|' + pin))) {
+      const studentKey = await homeworkSha256(schoolId + '|' + cls + '|' + homeworkNormalizeName(name));
+      const pinHash = await homeworkSha256(studentKey + '|' + pin);
+      identity = { schoolId, studentKey, pinHash, studentName: name, studentClass: cls };
+    }
+    const call = firebase.app().functions('us-central1').httpsCallable('getHomeworkHonorBoard');
+    const response = await call({
+      studentMode: true, period: selectedPeriod, classId: cls,
+      schoolId: identity.schoolId, studentKey: identity.studentKey,
+      pinHash: identity.pinHash, studentName: identity.studentName
+    });
+    const data = response?.data || {};
+    if (data.success !== true) throw new Error('لم يؤكد الخادم تحميل لوحة الشرف.');
+    window.currentStudentIdentity = identity;
+    const students = Array.isArray(data.students) ? data.students : [];
+    const periodLabel = selectedPeriod === 'weekly' ? 'الأسبوع الحالي' : selectedPeriod === 'monthly' ? 'الشهر الحالي' : 'الإجمالية';
+    const medals = ['🥇','🥈','🥉'];
+    box.innerHTML = `
+      <div style="text-align:center">
+        <div style="font-size:38px">🏆✨</div>
+        <h3 style="color:#92400e;margin:5px 0 12px">لوحة الشرف في واجبات النقاط المنزلية</h3>
+        <div style="font-weight:bold;color:#78350f;margin-bottom:12px">${periodLabel} — ${safeStudentResult(cls)}</div>
+        <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          <button type="button" onclick="showStudentHomeworkHonorBoard('weekly')" style="padding:9px 14px;border:0;border-radius:10px;background:${selectedPeriod==='weekly'?'#92400e':'#fde68a'};color:${selectedPeriod==='weekly'?'white':'#78350f'};font-weight:bold">الأسبوعية</button>
+          <button type="button" onclick="showStudentHomeworkHonorBoard('monthly')" style="padding:9px 14px;border:0;border-radius:10px;background:${selectedPeriod==='monthly'?'#92400e':'#fde68a'};color:${selectedPeriod==='monthly'?'white':'#78350f'};font-weight:bold">الشهرية</button>
+          <button type="button" onclick="showStudentHomeworkHonorBoard('all')" style="padding:9px 14px;border:0;border-radius:10px;background:${selectedPeriod==='all'?'#92400e':'#fde68a'};color:${selectedPeriod==='all'?'white':'#78350f'};font-weight:bold">الإجمالية</button>
+        </div>
+      </div>
+      ${students.length ? students.map((s,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:10px;margin:7px 0;background:${i===0?'#fef3c7':'white'};border:1px solid ${i===0?'#f59e0b':'#fde68a'};border-radius:12px">
+        <span style="font-size:25px;min-width:32px;text-align:center">${medals[i]||(''+(i+1))}</span>
+        <b style="flex:1">${safeStudentResult(s.name)}</b>
+        <strong style="color:#92400e">${Number(s.points||0)} نقطة</strong>
+      </div>`).join('') : '<div style="text-align:center;padding:16px;background:white;border-radius:12px">لا توجد نقاط واجبات منزلية مسجلة لهذه الفترة حتى الآن.</div>'}
+    `;
+  } catch (error) {
+    box.innerHTML = '<span style="color:#b91c1c">تعذر تحميل لوحة الشرف: '+safeStudentResult(error.message || error)+'</span>';
+  }
+};
+
+window.submitStudentAnswers = async function(autoSubmit=false) {
+    const identity=window.currentStudentIdentity;
+    if(!identity||!identity.studentKey||!identity.pinHash||!window.currentStudentAttemptId){alert('انتهت جلسة التحقق. ارجع وأدخل الصف والاسم والرقم السري مرة أخرى.');return;}
+    const btn=document.querySelector('#stSubmitArea button');
+    const fields=Array.isArray(window.currentStudentWorksheet&&window.currentStudentWorksheet.fields)?window.currentStudentWorksheet.fields:[];
+    if(!fields.length){alert('لا يمكن إرسال الواجب؛ لم يتم تحميل أسئلته بشكل صحيح.');return;}
+    const answers={},unanswered=[];
+    fields.forEach((f,index)=>{
+        const input=document.getElementById(f.id);const value=input?String(input.value==null?'':input.value).trim():'';
+        answers[f.id]=value;
+        if(!value)unanswered.push(index+1);
+    });
+    if(unanswered.length&&!autoSubmit&&!window.__worksheetTimeExpired){
+        alert('أكمل الإجابة عن جميع الأسئلة أولاً. الأسئلة غير المجابة: '+unanswered.join('، '));
+        const first=document.getElementById(fields[unanswered[0]-1].id);if(first)first.focus();return;
+    }
+    if(btn){btn.disabled=true;btn.textContent=autoSubmit?'⏳ انتهى الوقت، جارٍ التسليم...':'⏳ جارٍ إرسال الإجابات...';}
+    try{
+        const callable=firebase.app().functions('us-central1').httpsCallable('submitStudentWorksheetAnswers');
+        const response=await callable({
+            worksheetId:new URLSearchParams(window.location.search).get('id'),
+            attemptId:window.currentStudentAttemptId,schoolId:identity.schoolId,studentKey:identity.studentKey,
+            pinHash:identity.pinHash,studentName:identity.studentName,studentClass:identity.studentClass,answers
+        });
+        if(!response||!response.data||response.data.success!==true)throw new Error('لم يؤكد الخادم حفظ الإجابات.');
+        stopStudentWorksheetTimer();
+        document.getElementById('stWorkspace').style.display='none';document.getElementById('stSubmitArea').style.display='none';
+        document.getElementById('stSuccess').style.display='block';
+        document.getElementById('stSuccess').insertAdjacentHTML('beforeend','<p style="color:#166534;font-weight:bold">تم تسجيل إجابتك. لا يمكن إعادة إرسال هذه الورقة مرة أخرى.</p>');
+    }catch(error){
+        console.error('Student answers submit error:',error);
+        alert(error.message||'تعذر إرسال الإجابات.');
+        if(btn){btn.disabled=false;btn.textContent='✅ إرسال الإجابات';}
+    }
+}
+
+
+</script>
+</body></html>
