@@ -460,7 +460,7 @@ window.loadDailyChallenge=async function(){
     return;
   }
   window.__dailyChallengeCurrent=data;
-  if(data.attemptState==="submitted"){
+  if(data.attemptState==="submitted" || data.attemptState==="pending_review"){
     dailyChallengeRenderResult(data.attemptResult||{},data.challenge);
     return;
   }
@@ -500,8 +500,12 @@ window.startDailyChallenge=async function(){
   const identity=window.__dailyChallengeIdentity||await dailyChallengeIdentity();
   const response=await firebase.app().functions("us-central1").httpsCallable("startDailyChallengeAttempt")(identity);
   const data=response?.data||{};
+  if(data.alreadyPendingReview){
+    dailyChallengeRenderResult({pendingReview:true,awardedPoints:0},window.__dailyChallengeCurrent?.challenge);
+    return;
+  }
   if(data.alreadyCompleted){
-    dailyChallengeRenderResult({correct:data.correct,awardedPoints:data.awardedPoints},window.__dailyChallengeCurrent?.challenge);
+    dailyChallengeRenderResult({correct:data.correct,awardedPoints:data.awardedPoints,maxPoints:data.maxPoints},window.__dailyChallengeCurrent?.challenge);
     return;
   }
   if(data.success!==true||!data.challenge)throw new Error("لم يؤكد الخادم بدء التحدي.");
@@ -510,68 +514,77 @@ window.startDailyChallenge=async function(){
   dailyChallengeShowMessage(error.message||"تعذر بدء التحدي.",true);
  }
 };
+function dailyChallengeAddLabeledField(host,labelText,field){
+ const wrapper=dailyChallengeNode("div");wrapper.style.cssText="margin:10px 0;padding:10px;background:#fff;border:1px solid #fed7aa;border-radius:10px;";
+ const label=dailyChallengeNode("label",labelText);label.style.cssText="display:block;font-weight:bold;margin-bottom:7px;color:#334155;";
+ field.style.cssText=(field.style.cssText||"")+";width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5e1;border-radius:9px;font-size:16px;";
+ wrapper.append(label,field);host.appendChild(wrapper);return field;
+}
 function dailyChallengeRenderQuestion(challenge,expiresAtMillis){
- dailyChallengeClearTimer();
- window.__dailyChallengeCurrent={...(window.__dailyChallengeCurrent||{}),challenge};
- const host=document.getElementById("dailyChallengeContent");
- host.replaceChildren();
+ dailyChallengeClearTimer();window.__dailyChallengeCurrent={...(window.__dailyChallengeCurrent||{}),challenge};
+ const host=document.getElementById("dailyChallengeContent");host.replaceChildren();
  const title=dailyChallengeNode("h3",challenge.title||"تحدي اليوم");title.style.color="#9a3412";host.appendChild(title);
  const timer=dailyChallengeNode("div","");timer.id="dailyChallengeTimer";timer.style.cssText="padding:10px;text-align:center;background:#1e3a8a;color:#fff;border-radius:10px;font-size:20px;font-weight:bold;margin-bottom:12px";host.appendChild(timer);
- const question=dailyChallengeNode("p",challenge.question);question.style.cssText="font-size:18px;font-weight:bold;line-height:1.8";host.appendChild(question);
- const choices=dailyChallengeNode("div");choices.id="dailyChallengeChoices";
- (challenge.options||[]).forEach((option,index)=>{
-  const label=document.createElement("label");
-  label.style.cssText="display:flex;align-items:center;gap:10px;padding:12px;margin:8px 0;background:#fff;border:1px solid #fed7aa;border-radius:12px;cursor:pointer";
-  const radio=document.createElement("input");radio.type="radio";radio.name="dailyChallengeAnswer";radio.value=option.id;radio.style.cssText="width:20px;height:20px;flex:0 0 20px";
-  const text=dailyChallengeNode("span",option.text);text.style.flex="1";
-  label.append(radio,text);choices.appendChild(label);
- });
- host.appendChild(choices);
- const submit=dailyChallengeNode("button","إرسال الإجابة");
- submit.className="action-btn success";submit.style.width="100%";submit.id="dailyChallengeSubmit";
- submit.onclick=submitDailyChallenge;
- host.appendChild(submit);
- const tick=()=>{
-  const remaining=Math.max(0,Number(expiresAtMillis)-Date.now());
-  const seconds=Math.ceil(remaining/1000);
-  const el=document.getElementById("dailyChallengeTimer");
-  if(el)el.textContent="⏳ الوقت المتبقي: "+Math.floor(seconds/60)+":"+String(seconds%60).padStart(2,"0");
-  if(seconds<=0){
-    dailyChallengeClearTimer();
-    const btn=document.getElementById("dailyChallengeSubmit");
-    if(btn){btn.disabled=true;btn.textContent="انتهى الوقت";}
-  }
- };
+ const question=dailyChallengeNode("p",challenge.question||"");question.style.cssText="font-size:18px;font-weight:bold;line-height:1.8";host.appendChild(question);
+ const type=String(challenge.type||"mcq");
+ if(type==="matching"){
+  const note=dailyChallengeNode("div","اكتب رقم الجملة المناسبة في المربع الصغير أمام كل جملة. لا تحتاج إلى رسم خطوط.");note.style.cssText="background:#fff7ed;color:#9a3412;padding:10px;border-radius:10px;margin:10px 0;font-weight:bold;";host.appendChild(note);
+  const columns=dailyChallengeNode("div");columns.style.cssText="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;";
+  const left=dailyChallengeNode("div");left.appendChild(dailyChallengeNode("b","القائمة الأولى"));
+  (challenge.matchingLeft||[]).forEach((text,index)=>{const row=dailyChallengeNode("div");row.style.cssText="display:flex;gap:6px;align-items:center;padding:8px;margin:7px 0;background:#eff6ff;border-radius:9px;";
+   const box=dailyChallengeNode("input");box.type="number";box.min="1";box.max="4";box.step="1";box.inputMode="numeric";box.id="dailyMatch"+(index+1);box.style.cssText="width:48px;min-width:48px;padding:7px;text-align:center;font-weight:bold;border:2px solid #f59e0b;border-radius:8px;";
+   const sentence=dailyChallengeNode("span",String(index+1)+". "+text);sentence.style.cssText="font-size:14px;line-height:1.6;";row.append(box,sentence);left.appendChild(row);
+  });
+  const right=dailyChallengeNode("div");right.appendChild(dailyChallengeNode("b","القائمة الثانية"));
+  (challenge.matchingRight||[]).forEach((text,index)=>{const row=dailyChallengeNode("div",String(index+1)+". "+text);row.style.cssText="padding:9px;margin:7px 0;background:#f0fdf4;border-radius:9px;font-size:14px;line-height:1.6;";right.appendChild(row);});
+  columns.append(left,right);host.appendChild(columns);
+ }else if(type==="fill_blank"){
+  const bank=dailyChallengeNode("div");bank.style.cssText="padding:12px;background:#fff7ed;border:1px solid #fdba74;border-radius:12px;margin:10px 0;text-align:center;";
+  bank.appendChild(dailyChallengeNode("b","بنك الكلمات"));const bankText=dailyChallengeNode("div",(challenge.wordBank||[]).join("  —  "));bankText.style.cssText="margin-top:8px;font-weight:bold;color:#9a3412;line-height:1.9;";bank.appendChild(bankText);host.appendChild(bank);
+  (challenge.blanks||[]).forEach((blank,index)=>{const wrapper=dailyChallengeNode("div");wrapper.style.cssText="margin:10px 0;padding:12px;background:#fff;border:1px solid #dbeafe;border-radius:10px;";
+   const sentence=dailyChallengeNode("div",String(index+1)+". "+blank.sentence);sentence.style.cssText="font-weight:bold;line-height:1.8;margin-bottom:8px;";wrapper.appendChild(sentence);
+   const select=dailyChallengeNode("select");select.id="dailyBlank"+(index+1);const empty=dailyChallengeNode("option","اختر الكلمة المناسبة");empty.value="";select.appendChild(empty);
+   (challenge.wordBank||[]).forEach(word=>{const option=dailyChallengeNode("option",word);option.value=word;select.appendChild(option);});
+   select.style.cssText="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;font-size:16px;background:#fff;";wrapper.appendChild(select);host.appendChild(wrapper);
+  });
+ }else if(type==="writing"){
+  const prompt=dailyChallengeNode("div",challenge.writingPrompt||challenge.question);prompt.style.cssText="padding:12px;background:#fff7ed;border-radius:10px;font-size:17px;font-weight:bold;line-height:1.8;margin:10px 0;";host.appendChild(prompt);
+  const instruction=dailyChallengeNode("div",challenge.writingInstructions||"Write seven short sentences.");instruction.style.cssText="color:#475569;margin-bottom:10px;";host.appendChild(instruction);
+  for(let i=1;i<=7;i++){const area=dailyChallengeNode("textarea");area.id="dailyWriting"+i;area.rows=2;area.maxLength=300;area.placeholder="الجملة رقم "+i;dailyChallengeAddLabeledField(host,"الجملة "+i,area);}
+ }else if(type==="correct_verb"){
+  const sentence=dailyChallengeNode("div",challenge.verbSentence||"");sentence.style.cssText="padding:16px;background:#fff7ed;border-radius:10px;text-align:center;font-size:20px;font-weight:bold;line-height:1.8;margin:12px 0;";host.appendChild(sentence);
+  const answer=dailyChallengeNode("input");answer.id="dailyVerbAnswer";answer.type="text";answer.maxLength=80;answer.placeholder="اكتب الفعل بعد تصحيحه";dailyChallengeAddLabeledField(host,"Correct the verb in brackets:",answer);
+ }else{
+  (challenge.options||[]).forEach(option=>{const label=dailyChallengeNode("label");label.style.cssText="display:flex;align-items:center;gap:10px;padding:12px;margin:8px 0;background:#fff;border:1px solid #fed7aa;border-radius:12px;cursor:pointer;";
+   const radio=document.createElement("input");radio.type="radio";radio.name="dailyChallengeAnswer";radio.value=option.id;radio.style.cssText="width:20px;height:20px;flex:0 0 20px;";
+   const text=dailyChallengeNode("span",option.text);text.style.flex="1";label.append(radio,text);host.appendChild(label);
+  });
+ }
+ const submit=dailyChallengeNode("button","إرسال الإجابة");submit.className="action-btn success";submit.style.width="100%";submit.id="dailyChallengeSubmit";submit.onclick=submitDailyChallenge;host.appendChild(submit);
+ const tick=()=>{const remaining=Math.max(0,Number(expiresAtMillis)-Date.now());const seconds=Math.ceil(remaining/1000);const el=document.getElementById("dailyChallengeTimer");if(el)el.textContent="⏳ الوقت المتبقي: "+Math.floor(seconds/60)+":"+String(seconds%60).padStart(2,"0");if(seconds<=0){dailyChallengeClearTimer();const btn=document.getElementById("dailyChallengeSubmit");if(btn){btn.disabled=true;btn.textContent="انتهى الوقت";}}};
  tick();window.__dailyChallengeTimer=setInterval(tick,1000);
 }
 window.submitDailyChallenge=async function(){
- const selected=document.querySelector('input[name="dailyChallengeAnswer"]:checked');
- if(!selected){alert("اختر إجابة قبل الإرسال.");return;}
- const btn=document.getElementById("dailyChallengeSubmit");
- if(btn){btn.disabled=true;btn.textContent="⏳ جارٍ اعتماد إجابتك...";}
- dailyChallengeClearTimer();
- try{
-  const identity=window.__dailyChallengeIdentity||await dailyChallengeIdentity();
-  const response=await firebase.app().functions("us-central1").httpsCallable("submitDailyChallengeAttempt")({...identity,answerOptionId:selected.value});
-  const data=response?.data||{};
-  if(data.success!==true)throw new Error("لم يؤكد الخادم اعتماد الإجابة.");
-  dailyChallengeRenderResult(data,window.__dailyChallengeCurrent?.challenge);
- }catch(error){
-  dailyChallengeShowMessage(error.message||"تعذر إرسال الإجابة.",true);
- }
-};
+ const type=String(window.__dailyChallengeCurrent?.challenge?.type||"mcq");const payload={};
+ if(type==="mcq"){const selected=document.querySelector('input[name="dailyChallengeAnswer"]:checked');if(!selected){alert("اختر إجابة قبل الإرسال.");return;}payload.answerOptionId=selected.value;
+ }else if(type==="matching"){payload.matches=Array.from({length:4},(_,i)=>Number(document.getElementById("dailyMatch"+(i+1))?.value));if(payload.matches.some(x=>!Number.isInteger(x)||x<1||x>4)||new Set(payload.matches).size!==4){alert("أكمل مربعات التوصيل الأربعة بأرقام من 1 إلى 4 دون تكرار.");return;}
+ }else if(type==="fill_blank"){payload.answers=Array.from({length:5},(_,i)=>document.getElementById("dailyBlank"+(i+1))?.value||"");if(payload.answers.some(x=>!x)){alert("اختر كلمة لكل فراغ من بنك الكلمات.");return;}
+ }else if(type==="correct_verb"){payload.answerText=String(document.getElementById("dailyVerbAnswer")?.value||"").trim();if(!payload.answerText){alert("اكتب الفعل بعد تصحيحه.");return;}
+ }else if(type==="writing"){payload.sentences=Array.from({length:7},(_,i)=>String(document.getElementById("dailyWriting"+(i+1))?.value||"").trim());if(payload.sentences.some(x=>!x)){alert("اكتب الجمل السبع القصيرة قبل الإرسال.");return;}}
+ const btn=document.getElementById("dailyChallengeSubmit");if(btn){btn.disabled=true;btn.textContent="⏳ جارٍ اعتماد إجابتك...";}dailyChallengeClearTimer();
+ try{const identity=window.__dailyChallengeIdentity||await dailyChallengeIdentity();const response=await firebase.app().functions("us-central1").httpsCallable("submitDailyChallengeAttempt")({...identity,...payload});const data=response?.data||{};if(data.success!==true)throw new Error("لم يؤكد الخادم اعتماد الإجابة.");dailyChallengeRenderResult(data,window.__dailyChallengeCurrent?.challenge);
+ }catch(error){dailyChallengeShowMessage(error.message||"تعذر إرسال الإجابة.",true);}
+}
 function dailyChallengeRenderResult(result,challenge){
- dailyChallengeClearTimer();
- const host=document.getElementById("dailyChallengeContent");host.replaceChildren();
- const correct=result.correct===true;
- const title=dailyChallengeNode("h3",correct?"🎉 إجابة صحيحة! أحسنت يا بطل":"💪 محاولة رائعة! حاول غدًا");
- title.style.cssText="color:"+(correct?"#15803d":"#b45309")+";text-align:center;font-size:22px";
- host.appendChild(title);
- const score=dailyChallengeNode("div",correct?"حصلت على "+Number(result.awardedPoints||0)+" نقطة إضافية 🏆":"لم تحصل على نقاط هذه المرة، لكن التعلم مكسب!");
- score.style.cssText="text-align:center;font-weight:bold;padding:12px;background:#fff;border-radius:12px;margin:10px 0";
- host.appendChild(score);
- const explanation=String(result.explanation||challenge?.explanation||"");
- if(explanation){const note=dailyChallengeNode("p","💡 "+explanation);note.style.cssText="line-height:1.8;color:#475569";host.appendChild(note);}
+ dailyChallengeClearTimer();const host=document.getElementById("dailyChallengeContent");host.replaceChildren();
+ if(result.pendingReview){const title=dailyChallengeNode("h3","✅ تم إرسال موضوعك للمعلم بنجاح");title.style.cssText="color:#15803d;text-align:center;font-size:21px;";host.appendChild(title);
+  const note=dailyChallengeNode("div","موضوعك المكوّن من سبع جمل وصل إلى المعلم للمراجعة. ستُضاف النقاط إلى رصيدك بعد اعتماد التقييم.");note.style.cssText="padding:14px;background:#fff7ed;border-radius:12px;line-height:1.9;text-align:center;margin:12px 0;";host.appendChild(note);
+ }else{const correct=result.correct===true,awarded=Number(result.awardedPoints||0),maximum=Number(result.maxPoints||challenge?.rewardPoints||0);
+  const title=dailyChallengeNode("h3",correct?"🎉 إجابة صحيحة! أحسنت يا بطل":awarded>0?"👏 إجابة جيدة! حصلت على نقاط":"💪 محاولة رائعة! حاول غدًا");title.style.cssText="color:"+(awarded>0?"#15803d":"#b45309")+";text-align:center;font-size:22px";host.appendChild(title);
+  const scoreText=awarded>0?"حصلت على "+awarded+" من "+maximum+" نقطة 🏆":"لم تحصل على نقاط هذه المرة، لكن التعلم مكسب!";
+  const score=dailyChallengeNode("div",scoreText);score.style.cssText="text-align:center;font-weight:bold;padding:12px;background:#fff;border-radius:12px;margin:10px 0";host.appendChild(score);
+ }
+ const explanation=String(result.explanation||challenge?.explanation||"");if(explanation){const note=dailyChallengeNode("p","💡 "+explanation);note.style.cssText="line-height:1.8;color:#475569";host.appendChild(note);}
  host.appendChild(dailyChallengeNode("div","اكتمل تحدي اليوم. نراك في تحدي الغد! 🔥")).style.cssText="text-align:center;color:#9a3412;font-weight:bold;margin-top:12px";
 }
 
