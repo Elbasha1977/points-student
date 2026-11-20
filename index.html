@@ -488,7 +488,7 @@ function dailyChallengeRenderIntro(data){
  const c=data.challenge||{};
  host.appendChild(dailyChallengeNode("div",c.title||"تحدي اليوم"));
  host.lastChild.style.cssText="font-size:20px;font-weight:900;color:#9a3412;margin-bottom:8px";
- host.appendChild(dailyChallengeNode("p","سؤال اليوم جاهز! أمامك "+Number(c.durationSeconds||60)+" ثانية للإجابة. الإجابة الصحيحة تمنحك "+Number(c.rewardPoints||0)+" نقطة."));
+ host.appendChild(dailyChallengeNode("p","التحدي جاهز! أمامك "+Number(c.durationSeconds||60)+" ثانية. يمكنك الحصول على ما يصل إلى "+Number(c.rewardPoints||0)+" نقطة بحسب إجاباتك الصحيحة."));
  const btn=dailyChallengeNode("button","🚀 ابدأ التحدي الآن");
  btn.className="action-btn primary";btn.style.cssText="width:100%;background:linear-gradient(135deg,#ea580c,#f59e0b)";
  btn.onclick=()=>startDailyChallenge();
