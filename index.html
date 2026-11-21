@@ -56,6 +56,7 @@ body{margin:0;background:linear-gradient(135deg,#dbeafe,#c7d2fe);padding:14px;mi
   <button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف في واجبات النقاط المنزلية</button>
   <button type="button" class="action-btn" onclick="openDailyChallenge()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#ea580c,#f59e0b);color:white">🔥 تحدي اليوم — فرصة جديدة لجمع النقاط</button>
   <button type="button" id="questionHunterLaunchBtn" class="action-btn" onclick="openQuestionHunter()" style="display:none;width:100%;margin-top:10px;background:linear-gradient(135deg,#0f766e,#0891b2);color:white;font-size:18px">🎮 العب واكسب</button>
+  <div id="questionHunterAvailabilityMsg" style="display:none;margin-top:8px;padding:10px;border-radius:10px;background:#eff6ff;color:#1e40af;font-size:13px;text-align:center;line-height:1.7"></div>
     <div id="myHomeworkResults" style="display:none;margin-top:14px;padding:12px;border-radius:10px;background:#ecfeff;text-align:right"></div>
  </div>
  <div class="section" id="stWorkspace" style="display:none;position:relative;text-align:center;padding:12px;background:#f1f5f9;overflow:auto">
@@ -614,6 +615,7 @@ async function questionHunterResolveIdentity(){
 }
 window.questionHunterCheckAvailability = async function(){
  const button=document.getElementById("questionHunterLaunchBtn");
+ const status=document.getElementById("questionHunterAvailabilityMsg");
  if(!button)return;
  const sequence=++questionHunterAvailabilitySequence;
  button.style.display="none";
@@ -621,13 +623,32 @@ window.questionHunterCheckAvailability = async function(){
  const cls=String(document.getElementById("stClass")?.value||"").trim();
  const name=String(document.getElementById("stName")?.value||"").trim();
  const pin=String(document.getElementById("stPin")?.value||"").trim();
- if(!cls||!name||!/^[0-9]{4}$/.test(pin))return;
+ if(!cls||!name||!pin){
+  if(status){status.style.display="none";status.textContent="";}
+  return;
+ }
+ if(!/^[0-9]{4}$/.test(pin)){
+  if(status){status.style.display="block";status.textContent="أدخل الرقم السري المكوّن من أربعة أرقام للتحقق من اللعبة.";}
+  return;
+ }
+ if(status){status.style.display="block";status.textContent="⏳ جارٍ التحقق من اللعبة المنشورة لشعبتك...";}
  try{
   const data=await questionHunterResolveIdentity();
   if(sequence!==questionHunterAvailabilitySequence)return;
   button.style.display=data.found===true?"block":"none";
+  if(status){
+   status.style.display=data.found===true?"none":"block";
+   status.textContent=data.message||"لا توجد لعبة منشورة لشعبتك اليوم.";
+  }
  }catch(error){
-  if(sequence===questionHunterAvailabilitySequence)button.style.display="none";
+  if(sequence!==questionHunterAvailabilitySequence)return;
+  button.style.display="none";
+  if(status){
+   status.style.display="block";
+   status.textContent=error.message||"تعذر التحقق من بيانات الطالب. راجع الرقم السري وحاول مرة أخرى.";
+   status.style.background="#fef2f2";
+   status.style.color="#991b1b";
+  }
   console.warn("Question Hunter availability check:",error);
  }
 };
