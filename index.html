@@ -638,7 +638,7 @@ window.questionHunterCheckAvailability = async function(){
   button.style.display=data.found===true?"block":"none";
   if(status){
    status.style.display=data.found===true?"none":"block";
-   status.textContent=data.message||"لا توجد لعبة منشورة لشعبتك اليوم.";
+   status.textContent=(data.message||"لا توجد لعبة منشورة لشعبتك اليوم.")+(data.dateKey?"\\nتاريخ اللعبة الذي يفحصه النظام: "+data.dateKey:"")+(data.otherDate?"\\nوجدنا لعبة سابقة بتاريخ: "+data.otherDate:"");
   }
  }catch(error){
   if(sequence!==questionHunterAvailabilitySequence)return;
