@@ -599,19 +599,33 @@ function dailyChallengeRenderResult(result,challenge){
  
 // Show the game launcher only when today's game has been published for the selected class.
 let questionHunterAvailabilitySequence = 0;
+async function questionHunterResolveIdentity(){
+ const cls=String(document.getElementById("stClass")?.value||"").trim();
+ const name=String(document.getElementById("stName")?.value||"").trim();
+ const pin=String(document.getElementById("stPin")?.value||"").trim();
+ if(!cls||!name||!/^\\d{4}$/.test(pin))return null;
+ const response=await firebase.app().functions("us-central1").httpsCallable("getQuestionHunterStudentAvailability")({
+  studentClass:cls,studentName:name,pin
+ });
+ const data=response?.data||{};
+ if(data.success!==true||!data.identity)throw new Error("لم يتمكن النظام من التحقق من هوية الطالب.");
+ window.__questionHunterIdentity=data.identity;
+ return data;
+}
 window.questionHunterCheckAvailability = async function(){
  const button=document.getElementById("questionHunterLaunchBtn");
  if(!button)return;
  const sequence=++questionHunterAvailabilitySequence;
  button.style.display="none";
+ window.__questionHunterIdentity=null;
  const cls=String(document.getElementById("stClass")?.value||"").trim();
- if(!cls)return;
+ const name=String(document.getElementById("stName")?.value||"").trim();
+ const pin=String(document.getElementById("stPin")?.value||"").trim();
+ if(!cls||!name||!/^\\d{4}$/.test(pin))return;
  try{
-  const schoolId=dailyChallengeSchoolId();
-  const response=await firebase.app().functions("us-central1").httpsCallable("getQuestionHunterAvailability")({schoolId,classId:cls});
+  const data=await questionHunterResolveIdentity();
   if(sequence!==questionHunterAvailabilitySequence)return;
-  const data=response?.data||{};
-  button.style.display=data.success===true&&data.found===true?"block":"none";
+  button.style.display=data.found===true?"block":"none";
  }catch(error){
   if(sequence===questionHunterAvailabilitySequence)button.style.display="none";
   console.warn("Question Hunter availability check:",error);
@@ -625,6 +639,12 @@ if(typeof originalQuestionHunterPopulateNames==="function"){
   return result;
  };
 }
+const questionHunterPinField=document.getElementById("stPin");
+const questionHunterNameField=document.getElementById("stName");
+const questionHunterClassField=document.getElementById("stClass");
+if(questionHunterPinField)questionHunterPinField.addEventListener("input",()=>window.questionHunterCheckAvailability());
+if(questionHunterNameField)questionHunterNameField.addEventListener("change",()=>window.questionHunterCheckAvailability());
+if(questionHunterClassField)questionHunterClassField.addEventListener("change",()=>window.questionHunterCheckAvailability());
 // ==================== صائد الأسئلة — Question Hunter ====================
 window.__questionHunterState=null;
 function questionHunterMessage(text,isError=false){
@@ -640,7 +660,10 @@ window.closeQuestionHunter=function(){document.getElementById("questionHunterPan
 window.loadQuestionHunter=async function(){
  questionHunterMessage("⏳ جارٍ التحقق من بيانات الطالب وتحميل اللعبة...");
  try{
-  const identity=await dailyChallengeIdentity();
+  const verified=await questionHunterResolveIdentity();
+  if(!verified)throw new Error("اختر الصف واسمك وأدخل الرقم السري أولاً.");
+  if(verified.found!==true){questionHunterMessage("لا توجد لعبة منشورة لفصلك اليوم. ترقب اللعبة القادمة! 🎯",false);return;}
+  const identity=verified.identity;
   const response=await firebase.app().functions("us-central1").httpsCallable("getActiveQuestionHunterGame")(identity);
   const data=response?.data||{};if(data.success!==true)throw Error("لم يؤكد الخادم تحميل اللعبة.");
   if(!data.found){questionHunterMessage(data.message||"لا توجد لعبة منشورة لفصلك اليوم.",false);return;}
