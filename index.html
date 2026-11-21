@@ -621,7 +621,7 @@ window.questionHunterCheckAvailability = async function(){
  const cls=String(document.getElementById("stClass")?.value||"").trim();
  const name=String(document.getElementById("stName")?.value||"").trim();
  const pin=String(document.getElementById("stPin")?.value||"").trim();
- if(!cls||!name||!/^\\d{4}$/.test(pin))return;
+ if(!cls||!name||!/^[0-9]{4}$/.test(pin))return;
  try{
   const data=await questionHunterResolveIdentity();
   if(sequence!==questionHunterAvailabilitySequence)return;
