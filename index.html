@@ -55,8 +55,8 @@ body{margin:0;background:linear-gradient(135deg,#dbeafe,#c7d2fe);padding:14px;mi
   <button type="button" class="action-btn" onclick="showMyHomeworkResults()" style="width:100%;margin-top:10px;background:#0f766e;color:white">🏅 عرض نتائج نقاط واجباتي</button>
   <button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف في واجبات النقاط المنزلية</button>
   <button type="button" class="action-btn" onclick="openDailyChallenge()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#ea580c,#f59e0b);color:white">🔥 تحدي اليوم — فرصة جديدة لجمع النقاط</button>
-  <button type="button" class="action-btn" onclick="openQuestionHunter()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#0f766e,#0891b2);color:white">🎯 صائد الأسئلة — صوب واكتشف السؤال</button>
-  <div id="myHomeworkResults" style="display:none;margin-top:14px;padding:12px;border-radius:10px;background:#ecfeff;text-align:right"></div>
+  <button type="button" id="questionHunterLaunchBtn" class="action-btn" onclick="openQuestionHunter()" style="display:none;width:100%;margin-top:10px;background:linear-gradient(135deg,#0f766e,#0891b2);color:white;font-size:18px">🎮 العب واكسب</button>
+    <div id="myHomeworkResults" style="display:none;margin-top:14px;padding:12px;border-radius:10px;background:#ecfeff;text-align:right"></div>
  </div>
  <div class="section" id="stWorkspace" style="display:none;position:relative;text-align:center;padding:12px;background:#f1f5f9;overflow:auto">
   <div id="stTimerPanel" style="display:none;position:sticky;top:6px;z-index:20;background:#1e3a8a;color:white;padding:12px;border-radius:10px;margin:0 auto 14px;max-width:360px;font-size:20px;font-weight:900">⏳ الوقت المتبقي: <span id="stTimerValue">--:--</span></div>
@@ -597,6 +597,34 @@ function dailyChallengeRenderResult(result,challenge){
 
 
  
+// Show the game launcher only when today's game has been published for the selected class.
+let questionHunterAvailabilitySequence = 0;
+window.questionHunterCheckAvailability = async function(){
+ const button=document.getElementById("questionHunterLaunchBtn");
+ if(!button)return;
+ const sequence=++questionHunterAvailabilitySequence;
+ button.style.display="none";
+ const cls=String(document.getElementById("stClass")?.value||"").trim();
+ if(!cls)return;
+ try{
+  const schoolId=dailyChallengeSchoolId();
+  const response=await firebase.app().functions("us-central1").httpsCallable("getQuestionHunterAvailability")({schoolId,classId:cls});
+  if(sequence!==questionHunterAvailabilitySequence)return;
+  const data=response?.data||{};
+  button.style.display=data.success===true&&data.found===true?"block":"none";
+ }catch(error){
+  if(sequence===questionHunterAvailabilitySequence)button.style.display="none";
+  console.warn("Question Hunter availability check:",error);
+ }
+};
+const originalQuestionHunterPopulateNames=window.populateStudentNames;
+if(typeof originalQuestionHunterPopulateNames==="function"){
+ window.populateStudentNames=function(){
+  const result=originalQuestionHunterPopulateNames.apply(this,arguments);
+  window.questionHunterCheckAvailability();
+  return result;
+ };
+}
 // ==================== صائد الأسئلة — Question Hunter ====================
 window.__questionHunterState=null;
 function questionHunterMessage(text,isError=false){
