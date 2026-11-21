@@ -33,6 +33,8 @@ body{margin:0;background:linear-gradient(135deg,#dbeafe,#c7d2fe);padding:14px;mi
   #stInfoForm, #stSubmitArea { padding:14px !important; }
 }
 
+@keyframes qhunterFloat{0%{transform:translate(-34px,-10px) rotate(-7deg)}50%{transform:translate(34px,7px) rotate(7deg)}100%{transform:translate(-20px,12px) rotate(-5deg)}}
+@media(prefers-reduced-motion:reduce){#questionHunterPanel *{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
@@ -53,6 +55,7 @@ body{margin:0;background:linear-gradient(135deg,#dbeafe,#c7d2fe);padding:14px;mi
   <button type="button" class="action-btn" onclick="showMyHomeworkResults()" style="width:100%;margin-top:10px;background:#0f766e;color:white">🏅 عرض نتائج نقاط واجباتي</button>
   <button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف في واجبات النقاط المنزلية</button>
   <button type="button" class="action-btn" onclick="openDailyChallenge()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#ea580c,#f59e0b);color:white">🔥 تحدي اليوم — فرصة جديدة لجمع النقاط</button>
+  <button type="button" class="action-btn" onclick="openQuestionHunter()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#0f766e,#0891b2);color:white">🎯 صائد الأسئلة — صوب واكتشف السؤال</button>
   <div id="myHomeworkResults" style="display:none;margin-top:14px;padding:12px;border-radius:10px;background:#ecfeff;text-align:right"></div>
  </div>
  <div class="section" id="stWorkspace" style="display:none;position:relative;text-align:center;padding:12px;background:#f1f5f9;overflow:auto">
@@ -68,6 +71,10 @@ body{margin:0;background:linear-gradient(135deg,#dbeafe,#c7d2fe);padding:14px;mi
  </div>
  <div class="section" id="stSuccess" style="display:none;text-align:center"><h1 style="font-size:60px">🎉</h1><h2 style="color:#16a34a">تم إرسال إجاباتك بنجاح!</h2><p style="color:#166534;font-weight:bold">تم تسجيل إجابتك. لا يمكن إعادة إرسال هذه الورقة مرة أخرى.</p><button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:18px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف</button>
  <button type="button" class="action-btn" onclick="openDailyChallenge()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#ea580c,#f59e0b);color:white">🔥 تحدي اليوم</button><div id="studentHomeworkHonorBoardSuccess" style="display:none;margin-top:16px;padding:16px;border-radius:16px;background:linear-gradient(135deg,#fffbeb,#fef3c7);text-align:right"></div></div>
+ <div class="section" id="questionHunterPanel" style="display:none;border:2px solid #0ea5e9;background:linear-gradient(135deg,#eff6ff,#ecfeff)">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2 style="color:#0369a1;margin:0">🎯 صائد الأسئلة</h2><button type="button" class="action-btn" onclick="closeQuestionHunter()" style="background:#64748b;padding:8px 12px">إغلاق</button></div>
+  <div id="questionHunterContent" style="margin-top:14px;text-align:right"></div>
+ </div>
  <div class="section" id="dailyChallengePanel" style="display:none;border:2px solid #f59e0b;background:linear-gradient(135deg,#fff7ed,#fffbeb)">
   <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
    <h2 style="color:#c2410c;margin:0">🔥 تحدي اليوم</h2>
@@ -586,6 +593,108 @@ function dailyChallengeRenderResult(result,challenge){
  }
  const explanation=String(result.explanation||challenge?.explanation||"");if(explanation){const note=dailyChallengeNode("p","💡 "+explanation);note.style.cssText="line-height:1.8;color:#475569";host.appendChild(note);}
  host.appendChild(dailyChallengeNode("div","اكتمل تحدي اليوم. نراك في تحدي الغد! 🔥")).style.cssText="text-align:center;color:#9a3412;font-weight:bold;margin-top:12px";
+}
+
+
+ 
+// ==================== صائد الأسئلة — Question Hunter ====================
+window.__questionHunterState=null;
+function questionHunterMessage(text,isError=false){
+ const host=document.getElementById("questionHunterContent");host.replaceChildren();
+ const box=dailyChallengeNode("div",text);box.style.cssText="padding:14px;border-radius:12px;background:"+(isError?"#fee2e2":"#fff")+";color:"+(isError?"#991b1b":"#164e63")+";font-weight:bold;line-height:1.9;text-align:center;";
+ host.appendChild(box);
+}
+window.openQuestionHunter=async function(){
+ const panel=document.getElementById("questionHunterPanel");panel.style.display="block";panel.scrollIntoView({behavior:"smooth",block:"start"});
+ await loadQuestionHunter();
+};
+window.closeQuestionHunter=function(){document.getElementById("questionHunterPanel").style.display="none";};
+window.loadQuestionHunter=async function(){
+ questionHunterMessage("⏳ جارٍ التحقق من بيانات الطالب وتحميل اللعبة...");
+ try{
+  const identity=await dailyChallengeIdentity();
+  const response=await firebase.app().functions("us-central1").httpsCallable("getActiveQuestionHunterGame")(identity);
+  const data=response?.data||{};if(data.success!==true)throw Error("لم يؤكد الخادم تحميل اللعبة.");
+  if(!data.found){questionHunterMessage(data.message||"لا توجد لعبة منشورة لفصلك اليوم.",false);return;}
+  window.__questionHunterState={identity,game:data.game,session:null,sessionId:"",question:null};
+  if(data.session?.status==="completed"){questionHunterRenderCompleted(data.session);return;}
+  questionHunterRenderIntro(data.game,data.session);
+ }catch(error){console.error("Question Hunter load failed:",error);questionHunterMessage(error.message||"تعذر تحميل اللعبة.",true);}
+};
+function questionHunterRenderIntro(game,session){
+ const host=document.getElementById("questionHunterContent");host.replaceChildren();
+ const title=dailyChallengeNode("h3","🎯 "+(game.title||"صائد الأسئلة"));title.style.cssText="font-size:23px;color:#075985;text-align:center;";host.appendChild(title);
+ const desc=dailyChallengeNode("p","أمامك خمس جولات. صوب نحو الهدف واضغط إطلاق النار؛ عند إصابته سيظهر سؤال باللغة الإنجليزية. ستحصل على "+Number(game.rewardPoints||0)+" نقاط عن كل إجابة صحيحة.");desc.style.cssText="font-size:16px;line-height:1.9;text-align:center;color:#334155;";host.appendChild(desc);
+ const stats=dailyChallengeNode("div",session?"لقد بدأت اللعب من قبل. يمكنك استكمال الجولات المتبقية.":"استعد لخمس فرص لجمع النقاط!");stats.style.cssText="padding:12px;background:#fff;border-radius:12px;text-align:center;margin:12px 0;color:#0f766e;font-weight:bold;";host.appendChild(stats);
+ const start=dailyChallengeNode("button",session?"▶️ استكمال اللعبة":"🚀 ابدأ اللعب");start.className="action-btn primary";start.style.cssText="width:100%;background:linear-gradient(135deg,#0284c7,#0f766e)";start.onclick=questionHunterStart;host.appendChild(start);
+}
+window.questionHunterStart=async function(){
+ const state=window.__questionHunterState;if(!state)return;
+ questionHunterMessage("⏳ يتم تجهيز الأهداف...");
+ try{
+  const response=await firebase.app().functions("us-central1").httpsCallable("startQuestionHunterGame")(state.identity);
+  const data=response?.data||{};if(data.success!==true||!data.sessionId)throw Error("لم يؤكد الخادم بدء اللعبة.");
+  state.sessionId=data.sessionId;state.session=data;
+  if(data.completed||data.status==="completed"){questionHunterRenderCompleted(data);return;}
+  if(data.status==="awaiting_answer"){await questionHunterHitTarget(true);return;}
+  questionHunterRenderShooter(data);
+ }catch(error){questionHunterMessage(error.message||"تعذر بدء اللعبة.",true);}
+};
+function questionHunterRenderShooter(session){
+ const host=document.getElementById("questionHunterContent");host.replaceChildren();
+ const total=Number(session.questionCount||5),current=Number(session.questionIndex||0);
+ const top=dailyChallengeNode("div","الجولة "+(current+1)+" من "+total+"  |  النقاط: "+Number(session.score||0));top.style.cssText="text-align:center;font-weight:900;font-size:18px;color:#075985;padding:10px;background:white;border-radius:12px;margin-bottom:12px;";host.appendChild(top);
+ const field=dailyChallengeNode("div");field.style.cssText="position:relative;overflow:hidden;min-height:230px;border-radius:18px;background:radial-gradient(circle at 50% 50%,#1e3a8a,#0f172a 75%);border:3px solid #38bdf8;display:flex;align-items:center;justify-content:center;margin:10px 0;padding:16px;";
+ const stars=dailyChallengeNode("div","✦        ·       ✧          ·       ✦");stars.style.cssText="position:absolute;top:15px;color:#bae6fd;font-size:20px;width:100%;text-align:center;";field.appendChild(stars);
+ const target=dailyChallengeNode("button","🎯");target.type="button";target.setAttribute("aria-label","أطلق نحو الهدف");target.style.cssText="width:116px;height:116px;border-radius:50%;font-size:66px;border:5px solid #fbbf24;background:radial-gradient(circle,#fef3c7 0 28%,#ef4444 29% 50%,#fff 51% 68%,#dc2626 69%);box-shadow:0 0 25px #fbbf24;cursor:pointer;animation:qhunterFloat 1.8s ease-in-out infinite alternate;z-index:1;";target.onclick=()=>questionHunterHitTarget(false);field.appendChild(target);
+ const caption=dailyChallengeNode("div","اضغط على الهدف عندما تستعد للتصويب!");caption.style.cssText="position:absolute;bottom:14px;left:0;right:0;color:#e0f2fe;text-align:center;font-weight:bold;";field.appendChild(caption);host.appendChild(field);
+ const fire=dailyChallengeNode("button","🔫 صوب وأطلق!");fire.className="action-btn gold";fire.style.cssText="width:100%;font-size:19px;background:linear-gradient(135deg,#ea580c,#f59e0b);";fire.onclick=()=>questionHunterHitTarget(false);host.appendChild(fire);
+ const note=dailyChallengeNode("div","كل إصابة تكشف سؤالًا جديدًا. لديك خمس جولات فقط.");note.style.cssText="text-align:center;color:#64748b;margin-top:10px;font-size:13px;";host.appendChild(note);
+}
+async function questionHunterHitTarget(resume){
+ const state=window.__questionHunterState;if(!state?.sessionId)return;
+ questionHunterMessage(resume?"⏳ جارٍ استعادة السؤال المفتوح...":"💥 إصابة مباشرة! جارٍ تجهيز السؤال...");
+ try{
+  const response=await firebase.app().functions("us-central1").httpsCallable("hitQuestionHunterTarget")({...state.identity,sessionId:state.sessionId});
+  const data=response?.data||{};if(data.success!==true||!data.question)throw Error("لم يظهر السؤال بعد إصابة الهدف.");
+  state.question=data.question;questionHunterRenderQuestion(data.question,data.questionNumber);
+ }catch(error){questionHunterMessage(error.message||"تعذر فتح السؤال.",true);}
+}
+function questionHunterRenderQuestion(question,number){
+ const host=document.getElementById("questionHunterContent");host.replaceChildren();
+ const banner=dailyChallengeNode("div","🎉 أصبت الهدف! ظهر السؤال رقم "+number);banner.style.cssText="padding:12px;background:#dcfce7;color:#166534;font-weight:900;text-align:center;border-radius:12px;margin-bottom:12px;";host.appendChild(banner);
+ const prompt=dailyChallengeNode("h3",question.prompt);prompt.style.cssText="font-size:21px;line-height:1.8;text-align:center;color:#1e3a8a;";host.appendChild(prompt);
+ const form=dailyChallengeNode("div");form.style.cssText="margin:12px 0;";
+ (question.options||[]).forEach(option=>{
+  const label=dailyChallengeNode("label");label.style.cssText="display:flex;align-items:center;gap:10px;padding:13px;margin:9px 0;background:#fff;border:2px solid #bae6fd;border-radius:12px;font-size:17px;cursor:pointer;";
+  const radio=document.createElement("input");radio.type="radio";radio.name="qhunterAnswer";radio.value=option.id;radio.style.cssText="width:21px;height:21px;flex:0 0 21px;accent-color:#0284c7;";
+  const text=dailyChallengeNode("span",option.text);text.style.flex="1";label.append(radio,text);form.appendChild(label);
+ });host.appendChild(form);
+ const send=dailyChallengeNode("button","✅ تحقق من الإجابة");send.className="action-btn success";send.style.cssText="width:100%;";send.onclick=questionHunterSubmitAnswer;host.appendChild(send);
+}
+window.questionHunterSubmitAnswer=async function(){
+ const state=window.__questionHunterState;if(!state?.question)return;
+ const selected=document.querySelector('input[name="qhunterAnswer"]:checked');if(!selected){alert("اختر إجابة أولاً.");return;}
+ const btn=document.querySelector("#questionHunterContent button");if(btn){btn.disabled=true;btn.textContent="⏳ جارٍ تصحيح الإجابة...";}
+ try{
+  const response=await firebase.app().functions("us-central1").httpsCallable("submitQuestionHunterAnswer")({...state.identity,sessionId:state.sessionId,questionId:state.question.id,selectedOptionId:selected.value});
+  const data=response?.data||{};if(data.success!==true)throw Error("لم يؤكد الخادم تصحيح الإجابة.");
+  state.session=data;state.question=null;questionHunterRenderFeedback(data);
+ }catch(error){questionHunterMessage(error.message||"تعذر إرسال الإجابة.",true);}
+};
+function questionHunterRenderFeedback(result){
+ const host=document.getElementById("questionHunterContent");host.replaceChildren();
+ const correct=result.correct===true;const title=dailyChallengeNode("h2",correct?"🎉 إجابة صحيحة! أحسنت":"💪 حاول مرة أخرى في الجولة القادمة");title.style.cssText="text-align:center;color:"+(correct?"#15803d":"#b45309")+";font-size:24px;";host.appendChild(title);
+ const score=dailyChallengeNode("div",(correct?"حصلت على "+Number(result.pointsAwarded||0)+" نقاط!":"هذه المرة لم تحصل على نقاط.")+"  |  مجموعك: "+Number(result.score||0));score.style.cssText="padding:14px;text-align:center;background:white;border-radius:12px;font-weight:900;font-size:18px;margin:12px 0;";host.appendChild(score);
+ const progress=dailyChallengeNode("div","الإجابات الصحيحة: "+Number(result.correctAnswers||0)+" من "+Number(result.questionCount||5));progress.style.cssText="text-align:center;color:#475569;margin:10px 0;";host.appendChild(progress);
+ const next=dailyChallengeNode("button",result.completed?"🏆 عرض النتيجة النهائية":"🎯 إلى الهدف التالي");next.className="action-btn primary";next.style.cssText="width:100%;background:linear-gradient(135deg,#0284c7,#0f766e)";next.onclick=()=>result.completed?questionHunterRenderCompleted(result):questionHunterRenderShooter({questionCount:result.questionCount,questionIndex:result.questionIndex,score:result.score,correctAnswers:result.correctAnswers});host.appendChild(next);
+}
+function questionHunterRenderCompleted(result){
+ const host=document.getElementById("questionHunterContent");host.replaceChildren();
+ const title=dailyChallengeNode("h2","🏆 انتهت لعبة صائد الأسئلة!");title.style.cssText="text-align:center;color:#0369a1;font-size:24px;";host.appendChild(title);
+ const score=dailyChallengeNode("div","نتيجتك: "+Number(result.score||0)+" نقطة");score.style.cssText="font-size:24px;font-weight:900;color:#15803d;background:#fff;padding:22px;border-radius:16px;text-align:center;margin:14px 0;";host.appendChild(score);
+ const detail=dailyChallengeNode("p","الإجابات الصحيحة: "+Number(result.correctAnswers||0)+" من "+Number(result.questionCount||5)+". تمت إضافة نقاطك إلى رصيدك في نظام POINTS.");detail.style.cssText="text-align:center;line-height:1.9;";host.appendChild(detail);
+ const close=dailyChallengeNode("button","العودة إلى بوابة الطالب");close.className="action-btn primary";close.style.width="100%";close.onclick=()=>closeQuestionHunter();host.appendChild(close);
 }
 
 
