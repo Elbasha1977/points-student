@@ -603,7 +603,7 @@ async function questionHunterResolveIdentity(){
  const cls=String(document.getElementById("stClass")?.value||"").trim();
  const name=String(document.getElementById("stName")?.value||"").trim();
  const pin=String(document.getElementById("stPin")?.value||"").trim();
- if(!cls||!name||!/^\\d{4}$/.test(pin))return null;
+ if(!cls||!name||!/^\d{4}$/.test(pin))return null;
  const response=await firebase.app().functions("us-central1").httpsCallable("getQuestionHunterStudentAvailability")({
   studentClass:cls,studentName:name,pin
  });
