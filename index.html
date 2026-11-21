@@ -668,7 +668,11 @@ if(questionHunterNameField)questionHunterNameField.addEventListener("change",()=
 if(questionHunterClassField)questionHunterClassField.addEventListener("change",()=>window.questionHunterCheckAvailability());
 // ==================== صائد الأسئلة — Question Hunter ====================
 window.__questionHunterState=null;
+function questionHunterStopTargetMotion(){
+ if(window.__qhunterAnimationFrame){cancelAnimationFrame(window.__qhunterAnimationFrame);window.__qhunterAnimationFrame=0;}
+}
 function questionHunterMessage(text,isError=false){
+ questionHunterStopTargetMotion();
  const host=document.getElementById("questionHunterContent");host.replaceChildren();
  const box=dailyChallengeNode("div",text);box.style.cssText="padding:14px;border-radius:12px;background:"+(isError?"#fee2e2":"#fff")+";color:"+(isError?"#991b1b":"#164e63")+";font-weight:bold;line-height:1.9;text-align:center;";
  host.appendChild(box);
@@ -696,7 +700,7 @@ window.loadQuestionHunter=async function(){
 function questionHunterRenderIntro(game,session){
  const host=document.getElementById("questionHunterContent");host.replaceChildren();
  const title=dailyChallengeNode("h3","🎯 "+(game.title||"صائد الأسئلة"));title.style.cssText="font-size:23px;color:#075985;text-align:center;";host.appendChild(title);
- const desc=dailyChallengeNode("p","أمامك خمس جولات. صوب نحو الهدف واضغط إطلاق النار؛ عند إصابته سيظهر سؤال باللغة الإنجليزية. ستحصل على "+Number(game.rewardPoints||0)+" نقاط عن كل إجابة صحيحة.");desc.style.cssText="font-size:16px;line-height:1.9;text-align:center;color:#334155;";host.appendChild(desc);
+ const desc=dailyChallengeNode("p","أمامك خمس جولات. يتحرك الهدف أمامك، ولك طلقة واحدة في كل جولة. إذا أصبت الهدف يظهر السؤال؛ وإذا أخطأت يضيع سؤال الجولة ولا تحصل على نقاطه. ستحصل على "+Number(game.rewardPoints||0)+" نقاط عن كل إجابة صحيحة.");desc.style.cssText="font-size:16px;line-height:1.9;text-align:center;color:#334155;";host.appendChild(desc);
  const stats=dailyChallengeNode("div",session?"لقد بدأت اللعب من قبل. يمكنك استكمال الجولات المتبقية.":"استعد لخمس فرص لجمع النقاط!");stats.style.cssText="padding:12px;background:#fff;border-radius:12px;text-align:center;margin:12px 0;color:#0f766e;font-weight:bold;";host.appendChild(stats);
  const start=dailyChallengeNode("button",session?"▶️ استكمال اللعبة":"🚀 ابدأ اللعب");start.className="action-btn primary";start.style.cssText="width:100%;background:linear-gradient(135deg,#0284c7,#0f766e)";start.onclick=questionHunterStart;host.appendChild(start);
 }
@@ -713,15 +717,81 @@ window.questionHunterStart=async function(){
  }catch(error){questionHunterMessage(error.message||"تعذر بدء اللعبة.",true);}
 };
 function questionHunterRenderShooter(session){
+ questionHunterStopTargetMotion();
  const host=document.getElementById("questionHunterContent");host.replaceChildren();
  const total=Number(session.questionCount||5),current=Number(session.questionIndex||0);
- const top=dailyChallengeNode("div","الجولة "+(current+1)+" من "+total+"  |  النقاط: "+Number(session.score||0));top.style.cssText="text-align:center;font-weight:900;font-size:18px;color:#075985;padding:10px;background:white;border-radius:12px;margin-bottom:12px;";host.appendChild(top);
- const field=dailyChallengeNode("div");field.style.cssText="position:relative;overflow:hidden;min-height:230px;border-radius:18px;background:radial-gradient(circle at 50% 50%,#1e3a8a,#0f172a 75%);border:3px solid #38bdf8;display:flex;align-items:center;justify-content:center;margin:10px 0;padding:16px;";
- const stars=dailyChallengeNode("div","✦        ·       ✧          ·       ✦");stars.style.cssText="position:absolute;top:15px;color:#bae6fd;font-size:20px;width:100%;text-align:center;";field.appendChild(stars);
- const target=dailyChallengeNode("button","🎯");target.type="button";target.setAttribute("aria-label","أطلق نحو الهدف");target.style.cssText="width:116px;height:116px;border-radius:50%;font-size:66px;border:5px solid #fbbf24;background:radial-gradient(circle,#fef3c7 0 28%,#ef4444 29% 50%,#fff 51% 68%,#dc2626 69%);box-shadow:0 0 25px #fbbf24;cursor:pointer;animation:qhunterFloat 1.8s ease-in-out infinite alternate;z-index:1;";target.onclick=()=>questionHunterHitTarget(false);field.appendChild(target);
- const caption=dailyChallengeNode("div","اضغط على الهدف عندما تستعد للتصويب!");caption.style.cssText="position:absolute;bottom:14px;left:0;right:0;color:#e0f2fe;text-align:center;font-weight:bold;";field.appendChild(caption);host.appendChild(field);
- const fire=dailyChallengeNode("button","🔫 صوب وأطلق!");fire.className="action-btn gold";fire.style.cssText="width:100%;font-size:19px;background:linear-gradient(135deg,#ea580c,#f59e0b);";fire.onclick=()=>questionHunterHitTarget(false);host.appendChild(fire);
- const note=dailyChallengeNode("div","كل إصابة تكشف سؤالًا جديدًا. لديك خمس جولات فقط.");note.style.cssText="text-align:center;color:#64748b;margin-top:10px;font-size:13px;";host.appendChild(note);
+ const top=dailyChallengeNode("div","الجولة "+(current+1)+" من "+total+"  |  النقاط: "+Number(session.score||0)+"  |  المتبقي: طلقة واحدة");top.style.cssText="text-align:center;font-weight:900;font-size:18px;color:#075985;padding:10px;background:white;border-radius:12px;margin-bottom:12px;";host.appendChild(top);
+ const field=dailyChallengeNode("div");field.setAttribute("role","application");field.setAttribute("aria-label","ساحة التصويب على هدف متحرك");
+ field.style.cssText="position:relative;overflow:hidden;height:clamp(270px,48vw,360px);border-radius:18px;background:radial-gradient(circle at 50% 45%,#1e3a8a,#0f172a 76%);border:3px solid #38bdf8;margin:10px 0;touch-action:pan-y;user-select:none;cursor:crosshair;";
+ const stars=dailyChallengeNode("div","✦        ·       ✧          ·       ✦");stars.style.cssText="position:absolute;top:13px;left:0;right:0;color:#bae6fd;font-size:20px;text-align:center;pointer-events:none;";field.appendChild(stars);
+ const target=dailyChallengeNode("div");target.setAttribute("aria-hidden","true");
+ target.style.cssText="position:absolute;left:50%;top:50%;width:78px;height:78px;margin:0;border-radius:50%;transform:translate(-50%,-50%);border:5px solid #fbbf24;background:radial-gradient(circle,#ef4444 0 13%,#fff 14% 29%,#ef4444 30% 47%,#fff 48% 66%,#dc2626 67%);box-shadow:0 0 24px #fbbf24,0 0 45px rgba(251,191,36,.45);pointer-events:none;z-index:2;transition:filter .12s,transform .16s;";
+ const bull=dailyChallengeNode("span","🎯");bull.style.cssText="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:31px;filter:drop-shadow(0 1px 2px #fff);";target.appendChild(bull);field.appendChild(target);
+ const caption=dailyChallengeNode("div","🎯 انقر فوق الهدف المتحرك لإصابته");caption.style.cssText="position:absolute;bottom:12px;left:8px;right:8px;color:#e0f2fe;text-align:center;font-weight:900;font-size:15px;text-shadow:0 1px 3px #020617;pointer-events:none;z-index:3;";field.appendChild(caption);
+ host.appendChild(field);
+ const status=dailyChallengeNode("div","👀 راقب حركة الهدف… لديك طلقة واحدة فقط!");status.style.cssText="text-align:center;color:#075985;font-weight:800;margin:12px 0 6px;min-height:28px;";host.appendChild(status);
+ const note=dailyChallengeNode("div","⚠️ أي نقرة خارج الدائرة تُضيّع سؤال هذه الجولة فورًا.");note.style.cssText="text-align:center;color:#b45309;margin-top:6px;font-size:14px;font-weight:bold;line-height:1.8;";host.appendChild(note);
+ let locked=false,last=0;
+ const width=()=>field.clientWidth,height=()=>field.clientHeight;
+ const radius=39,padding=radius+7;
+ let x=Math.max(padding,width()/2),y=Math.max(padding+16,height()/2);
+ const speedBase=165+current*34;
+ let vx=speedBase*(Math.random()>.5?1:-1),vy=speedBase*.72*(Math.random()>.5?1:-1);
+ function animate(now){
+  if(locked||!field.isConnected)return;
+  const dt=last?Math.min((now-last)/1000,.045):0;last=now;
+  const w=width(),h=height(),minX=padding,maxX=Math.max(padding,w-padding),minY=padding+12,maxY=Math.max(padding+12,h-padding-30);
+  x+=vx*dt;y+=vy*dt;
+  if(x<minX){x=minX;vx=Math.abs(vx);}
+  if(x>maxX){x=maxX;vx=-Math.abs(vx);}
+  if(y<minY){y=minY;vy=Math.abs(vy);}
+  if(y>maxY){y=maxY;vy=-Math.abs(vy);}
+  target.style.left=x+"px";target.style.top=y+"px";
+  window.__qhunterAnimationFrame=requestAnimationFrame(animate);
+ }
+ window.__qhunterAnimationFrame=requestAnimationFrame(animate);
+ field.addEventListener("pointerdown",event=>{
+  if(locked||event.isPrimary===false)return;
+  if(event.pointerType==="mouse"&&event.button!==0)return;
+  const rect=field.getBoundingClientRect(),px=event.clientX-rect.left,py=event.clientY-rect.top;
+  locked=true;questionHunterStopTargetMotion();
+  const distance=Math.hypot(px-x,py-y);
+  const marker=dailyChallengeNode("div",distance<=radius?"🎯":"✕");
+  marker.style.cssText="position:absolute;left:"+px+"px;top:"+py+"px;transform:translate(-50%,-50%);font-size:38px;font-weight:900;color:"+(distance<=radius?"#fde047":"#fb7185")+";text-shadow:0 2px 8px #000;pointer-events:none;z-index:5;";
+  field.appendChild(marker);
+  if(distance<=radius){
+   target.style.filter="brightness(1.7) drop-shadow(0 0 18px #facc15)";
+   target.style.transform="translate(-50%,-50%) scale(1.35) rotate(25deg)";
+   status.textContent="🎯 إصابة مباشرة! أحسنت التصويب…";
+   caption.textContent="💥 أصبت الهدف!";
+   setTimeout(()=>questionHunterHitTarget(false),420);
+  }else{
+   status.textContent="💨 أخطأت التصويب! ضاع سؤال هذه الجولة.";
+   status.style.color="#b91c1c";caption.textContent="❌ انتهت فرصة هذه الجولة";
+   setTimeout(()=>questionHunterRecordMiss(current),300);
+  }
+ });
+}
+async function questionHunterRecordMiss(expectedQuestionIndex){
+ const state=window.__questionHunterState;if(!state?.sessionId)return;
+ questionHunterMessage("❌ لم تصب الهدف. جارٍ تسجيل ضياع سؤال هذه الجولة...");
+ try{
+  const response=await firebase.app().functions("us-central1").httpsCallable("hitQuestionHunterTarget")({...state.identity,sessionId:state.sessionId,missed:true,expectedQuestionIndex});
+  const data=response?.data||{};if(data.success!==true||data.missed!==true)throw Error("لم يؤكد الخادم تسجيل الطلقة الفائتة.");
+  state.session=data;
+  questionHunterRenderMissedRound(data);
+ }catch(error){
+  console.error("Question Hunter missed-shot registration failed:",error);
+  questionHunterMessage((error.message||"تعذر تسجيل الطلقة الفائتة.")+" افتح اللعبة مرة أخرى لاستعادة حالة الجولة.",true);
+  const retry=dailyChallengeNode("button","🔄 استعادة حالة اللعبة");retry.className="action-btn primary";retry.style.width="100%";retry.onclick=loadQuestionHunter;document.getElementById("questionHunterContent").appendChild(retry);
+ }
+}
+function questionHunterRenderMissedRound(result){
+ const host=document.getElementById("questionHunterContent");host.replaceChildren();
+ const title=dailyChallengeNode("h2","💨 ضاعت عليك الجولة!");title.style.cssText="text-align:center;color:#b91c1c;font-size:24px;";host.appendChild(title);
+ const text=dailyChallengeNode("p","لم تصب الهدف في طلقتك الوحيدة، لذلك تم تجاوز سؤال هذه الجولة ولن تحصل على نقاطه.");text.style.cssText="text-align:center;line-height:1.9;font-weight:bold;color:#7f1d1d;";host.appendChild(text);
+ const score=dailyChallengeNode("div","مجموع نقاطك: "+Number(result.score||0)+"  |  جولات فائتة: "+Number(result.missedShots||0));score.style.cssText="padding:14px;text-align:center;background:white;border-radius:12px;font-weight:900;font-size:18px;margin:12px 0;";host.appendChild(score);
+ const next=dailyChallengeNode("button",result.completed?"🏆 عرض النتيجة النهائية":"🎯 انتقل إلى الهدف التالي");next.className="action-btn primary";next.style.cssText="width:100%;background:linear-gradient(135deg,#0284c7,#0f766e)";next.onclick=()=>result.completed?questionHunterRenderCompleted(result):questionHunterRenderShooter(result);host.appendChild(next);
 }
 async function questionHunterHitTarget(resume){
  const state=window.__questionHunterState;if(!state?.sessionId)return;
@@ -765,7 +835,7 @@ function questionHunterRenderCompleted(result){
  const host=document.getElementById("questionHunterContent");host.replaceChildren();
  const title=dailyChallengeNode("h2","🏆 انتهت لعبة صائد الأسئلة!");title.style.cssText="text-align:center;color:#0369a1;font-size:24px;";host.appendChild(title);
  const score=dailyChallengeNode("div","نتيجتك: "+Number(result.score||0)+" نقطة");score.style.cssText="font-size:24px;font-weight:900;color:#15803d;background:#fff;padding:22px;border-radius:16px;text-align:center;margin:14px 0;";host.appendChild(score);
- const detail=dailyChallengeNode("p","الإجابات الصحيحة: "+Number(result.correctAnswers||0)+" من "+Number(result.questionCount||5)+". تمت إضافة نقاطك إلى رصيدك في نظام POINTS.");detail.style.cssText="text-align:center;line-height:1.9;";host.appendChild(detail);
+ const detail=dailyChallengeNode("p","الإجابات الصحيحة: "+Number(result.correctAnswers||0)+" من "+Number(result.questionCount||5)+" | الجولات الفائتة: "+Number(result.missedShots||0)+". تمت إضافة النقاط المستحقة إلى رصيدك في نظام POINTS.");detail.style.cssText="text-align:center;line-height:1.9;";host.appendChild(detail);
  const close=dailyChallengeNode("button","العودة إلى بوابة الطالب");close.className="action-btn primary";close.style.width="100%";close.onclick=()=>closeQuestionHunter();host.appendChild(close);
 }
 
