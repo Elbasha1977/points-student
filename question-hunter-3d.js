@@ -93,17 +93,72 @@ function blocks(T,opts){
  g.camera.position.set(0,7,12);g.render((dt,t)=>{if(done)return;avatar.position.x=Math.max(-5,Math.min(5,avatar.position.x+((keys.r?1:0)-(keys.l?1:0))*dt*5));avatar.position.z=Math.max(-49,Math.min(8,avatar.position.z+((keys.d?1:0)-(keys.u?1:0))*dt*5));g.camera.position.x+=(avatar.position.x-g.camera.position.x)*dt*2;g.camera.position.z+=(avatar.position.z+9-g.camera.position.z)*dt*2;g.camera.lookAt(avatar.position.x,0,avatar.position.z-7);cubes.forEach(c=>{c.rotation.x+=dt;c.rotation.y+=dt*1.4;if(!c.userData.got&&avatar.position.distanceTo(c.position)<1.5){c.userData.got=true;c.visible=false;got++;g.score.textContent="المكعبات: "+got+"/5";if(got===5){done=true;g.finish(true,"✨ اكتمل بناء المكعبات!");}}});});
 }
 function football(T,opts){
- const g=createHost(T,{title:"⚽ ركلة الجزاء 3D",stats:opts.stats,hint:"اختر اتجاه التسديد ثم اضغط «سدد». إذا تجاوزت الكرة الحارس ودخلت المرمى يظهر السؤال.",sky:0x91c9f1,onSuccess:opts.onSuccess,onMiss:opts.onMiss});
- floor(T,g.scene,0x21834b,38,55);
- const goal=new T.Group();g.scene.add(goal);const white=mat(T,0xffffff,.4);goal.add(box(T,.18,4,.18,white,-4,2,-13),box(T,.18,4,.18,white,4,2,-13),box(T,8,.18,.18,white,0,4,-13));
- for(let i=0;i<9;i++)goal.add(box(T,.025,4,.025,mat(T,0xdbeafe),-4+i,-0+2,-13.1));for(let i=0;i<5;i++)goal.add(box(T,8,.025,.025,mat(T,0xdbeafe),0,i*.8,-13.1));
- const keeper=new T.Group();g.scene.add(keeper);capsulePerson(T,keeper,mat(T,0x16a34a),mat(T,0xf1c27d),mat(T,0x111827));keeper.position.set(0,0,-11.5);
- const kicker=new T.Group();g.scene.add(kicker);capsulePerson(T,kicker,mat(T,0x2563eb),mat(T,0xf1c27d),mat(T,0xffffff));kicker.position.set(0,0,5);
- const ball=sphere(T,.38,mat(T,0xffffff,.35),0,.4,2);ball.add(sphere(T,.385,mat(T,0x111827),0,0,0));g.camera.position.set(0,7,15);g.camera.lookAt(0,1,-6);
- let direction=0,shot=false,elapsed=0;const choices=[{label:"⬅️ يسار",v:-1},{label:"🎯 الوسط",v:0},{label:"➡️ يمين",v:1}];choices.forEach(c=>makeButton(c.label,()=>{if(!shot){direction=c.v;g.hint.textContent="اتجاه التسديد: "+c.label+" — اضغط سدد الآن";}},g.controls));
- makeButton("⚽ سدد الكرة",()=>{if(shot)return;shot=true;g.controls.querySelectorAll("button").forEach(b=>{b.disabled=true;b.style.opacity=".5";});g.hint.textContent="🏃 اللاعب يسدد... والحارس يحاول التصدي!";},g.controls,"background:#dc2626");
- g.render((dt,t)=>{keeper.position.x=Math.sin(t*1.8)*1.25;if(shot){elapsed+=dt;const p=Math.min(1,elapsed/1.05);ball.position.x=direction*2.65*p;ball.position.y=.4+Math.sin(p*Math.PI)*3.1;ball.position.z=2-15*p;ball.rotation.x-=dt*9;ball.rotation.z+=dt*5;keeper.position.x+=(direction===0?0:direction*.9-keeper.position.x)*Math.min(1,dt*5);if(p>=1){const saved=Math.abs(direction-keeper.position.x/2.6)<.5&&Math.random()<.82;g.finish(!saved,saved?"🧤 تصدى الحارس للكرة! ضاعت ركلة الجزاء.":"⚽ جوووول! الكرة داخل الشباك!");}}});
+  const g=createHost(T,{title:"⚽ ركلة الجزاء 3D",stats:opts.stats,hint:"شاهد الكرة أمام اللاعب. اختر زاوية التسديد ثم اضغط «سدد الكرة».",sky:0x8bc9ed,onSuccess:opts.onSuccess,onMiss:opts.onMiss});
+  const scene=g.scene;
+  floor(T,scene,0x21834b,42,62);
+  // خطوط منطقة الجزاء ونقطة التسديد
+  const line=mat(T,0xffffff,.55);
+  scene.add(box(T,22,.035,.09,line,0,.02,-8));
+  scene.add(box(T,22,.035,.09,line,0,.02,-20));
+  scene.add(box(T,.09,.035,12,line,-11,.02,-14),box(T,.09,.035,12,line,11,.02,-14));
+  scene.add(box(T,10,.04,.08,line,0,.03,7));
+  const spot=new T.Mesh(new T.CircleGeometry(.16,24),line);spot.rotation.x=-Math.PI/2;spot.position.set(0,.025,4.2);scene.add(spot);
+  // المرمى ثلاثي الأبعاد وشبكة واضحة
+  const goal=new T.Group();scene.add(goal);
+  const postMat=mat(T,0xffffff,.32,.12), netMat=new T.LineBasicMaterial({color:0xeaf5ff});
+  const postL=box(T,.22,4.5,.22,postMat,-4.8,2.25,-16);
+  const postR=box(T,.22,4.5,.22,postMat,4.8,2.25,-16);
+  const cross=box(T,9.8,.22,.22,postMat,0,4.5,-16);
+  goal.add(postL,postR,cross);
+  for(let x=-4.5;x<=4.51;x+=.75){const v=box(T,.025,4.25,.025,mat(T,0xe7f2ff),x,2.15,-16.12);goal.add(v);}
+  for(let y=.35;y<=4.2;y+=.65){const h=box(T,9.5,.025,.025,mat(T,0xe7f2ff),0,y,-16.12);goal.add(h);}
+  // حارس المرمى
+  const keeper=new T.Group();scene.add(keeper);
+  const kp=capsulePerson(T,keeper,mat(T,0x16a34a),mat(T,0xf1c27d),mat(T,0x111827));
+  keeper.position.set(0,0,-14.3);
+  // اللاعب المسدد
+  const kicker=new T.Group();scene.add(kicker);
+  const footParts=capsulePerson(T,kicker,mat(T,0x2563eb),mat(T,0xf1c27d),mat(T,0xffffff));
+  kicker.position.set(0,0,6.4);
+  // كرة قدم بيضاء حقيقية مع رقع سوداء على سطح الكرة
+  const ball=new T.Group();scene.add(ball);
+  const ballRadius=.43;
+  const ballCore=sphere(T,ballRadius,mat(T,0xffffff,.38),0,0,0);ball.add(ballCore);
+  const patchMat=mat(T,0x111827,.62);
+  const patchDirs=[[0,1,0],[.85,.32,0],[-.85,.32,0],[0,.32,.85],[0,.32,-.85],[.55,-.55,.55],[-.55,-.55,.55],[.55,-.55,-.55],[-.55,-.55,-.55]];
+  patchDirs.forEach(d=>{const v=new T.Vector3(d[0],d[1],d[2]).normalize().multiplyScalar(ballRadius*.985);const p=sphere(T,.105,patchMat,v.x,v.y,v.z);p.scale.set(1,.9,.18);p.quaternion.setFromUnitVectors(new T.Vector3(0,0,1),new T.Vector3(d[0],d[1],d[2]).normalize());ball.add(p);});
+  ball.position.set(0,.48,3.8);
+  // إضاءة وظلال ومشهد أقرب للملعب
+  g.camera.position.set(0,7.2,20);
+  g.camera.lookAt(0,1.8,-7);
+  let direction=0,shot=false,elapsed=0,finished=false;
+  const choices=[{label:"⬅️ الزاوية اليسرى",v:-1},{label:"🎯 الوسط",v:0},{label:"➡️ الزاوية اليمنى",v:1}];
+  choices.forEach(c=>makeButton(c.label,()=>{if(!shot){direction=c.v;g.hint.textContent="تم اختيار "+c.label+" — اضغط سدد الكرة";}},g.controls));
+  makeButton("⚽ سدد الكرة",()=>{if(shot||finished)return;shot=true;g.controls.querySelectorAll("button").forEach(b=>{b.disabled=true;b.style.opacity=".5";});g.hint.textContent="🏃 اللاعب يركل الكرة... والحارس يستعد للتصدي!";},g.controls,"background:#dc2626");
+  g.render((dt,t)=>{
+    if(finished)return;
+    keeper.position.x=Math.sin(t*1.1)*.18;
+    if(!shot){ball.rotation.y+=dt*.35;return;}
+    elapsed+=dt;
+    const p=Math.min(1,elapsed/1.35);
+    const ease=p*p*(3-2*p);
+    ball.position.x=direction*3.65*ease;
+    ball.position.y=.48+Math.sin(p*Math.PI)*3.25;
+    ball.position.z=3.8-20.1*ease;
+    ball.rotation.x-=dt*11;ball.rotation.z+=dt*8;
+    // حركة اندفاع الحارس باتجاه الكرة
+    const diveTarget=direction===0?0:direction*3.25;
+    keeper.position.x+=(diveTarget-keeper.position.x)*Math.min(1,dt*5.5);
+    keeper.rotation.z+=(direction===0?0:-direction*.72-keeper.rotation.z)*Math.min(1,dt*4);
+    kp.arm1.rotation.z=-direction*.8;kp.arm2.rotation.z=-direction*.8;
+    if(p>=1){
+      finished=true;
+      const saved=(direction===0)||(Math.abs(keeper.position.x-ball.position.x)<1.25&&Math.random()<.65);
+      g.finish(!saved,saved?"🧤 تصدى الحارس للكرة! ضاعت ركلة الجزاء.":"⚽ جوووول! الكرة تجاوزت الحارس ودخلت المرمى!");
+    }
+  });
 }
+
 function thief(T,opts){
  const g=createHost(T,{title:"🚓 STOP THIEF — امسك اللص",stats:opts.stats,hint:"الشرطي يركض تلقائيًا خلف اللص. بدّل المسارات لتفادي السيارات واضغط اندفاعًا لزيادة السرعة.",sky:0x9eb8d0,onSuccess:opts.onSuccess,onMiss:opts.onMiss});
  floor(T,g.scene,0x343b46,38,110);
