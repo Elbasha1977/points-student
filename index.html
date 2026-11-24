@@ -685,6 +685,7 @@ if(questionHunterClassField)questionHunterClassField.addEventListener("change",(
 window.__questionHunterState=null;
 function questionHunterStopTargetMotion(){
  if(window.__qhunterAnimationFrame){cancelAnimationFrame(window.__qhunterAnimationFrame);window.__qhunterAnimationFrame=0;}
+ if(window.QuestionHunter3D)window.QuestionHunter3D.stop();
 }
 function questionHunterMessage(text,isError=false){
  questionHunterStopTargetMotion();
