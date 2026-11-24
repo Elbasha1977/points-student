@@ -765,8 +765,7 @@ window.questionHunterStart=async function(mode="tap"){
 };
 function questionHunterRenderSelectedShooter(session){
  const state=window.__questionHunterState;
- if(state?.mode==="rocket")questionHunterRenderRocketShooter(session);
- else if(["tap","rocket","treasure","race","blocks","football","thief"].includes(state?.mode))questionHunterRender3DGame(session,state.mode);
+ if(["tap","rocket","treasure","race","blocks","football","thief"].includes(state?.mode))questionHunterRender3DGame(session,state.mode);
  else questionHunterRenderShooter(session);
 }
 function questionHunterRender3DGame(session,mode){
