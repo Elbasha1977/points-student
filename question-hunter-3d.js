@@ -52,6 +52,39 @@ function createHost(T,opts){
 function floor(T,scene,color=0x4d9b58,w=36,d=80){const g=box(T,w,.3,d,mat(T,color),0,-.18,-24);scene.add(g);return g;}
 function tree(T,scene,x,z){const trunk=box(T,.32,1.4,.32,mat(T,0x754323),x,.65,z);const crown=sphere(T,.95,mat(T,0x23864b),x,1.9,z);scene.add(trunk,crown);}
 function makeChest(T,scene,x,z){const g=new T.Group();g.position.set(x,0,z);g.add(box(T,1.05,.62,.72,mat(T,0x9a4d13),0,.38,0));g.add(box(T,1.08,.18,.76,mat(T,0xe5a52e),0,.77,0));g.add(box(T,.17,.3,.08,mat(T,0xfde68a),0,.48,-.4));const glow=new T.PointLight(0xffc928,1.5,5);glow.position.set(0,1.3,0);g.add(glow);scene.add(g);return g;}
+function tap(T,opts){
+ const g=createHost(T,{title:"🎯 ساحة التصويب 3D",stats:opts.stats,hint:"المس الهدف الطائر بالضغط عليه قبل أن يبتعد! أصب الهدف لفتح السؤال.",sky:0x9bd8f4,onSuccess:opts.onSuccess,onMiss:opts.onMiss});
+ floor(T,g.scene,0x426b45,36,44);
+ for(let i=0;i<8;i++){const post=box(T,.22,2.8,.22,mat(T,0x8b5a2b),-13+i*3.7,1.3,-12-(i%3)*5);g.scene.add(post);}
+ const target=new T.Group();g.scene.add(target);
+ const disk=new T.Mesh(new T.CylinderGeometry(1.05,1.05,.22,32),mat(T,0xef4444,.3));disk.rotation.x=Math.PI/2;target.add(disk);
+ const ring=new T.Mesh(new T.TorusGeometry(.72,.12,10,32),mat(T,0xffffff));ring.position.z=.15;target.add(ring);
+ const bull=new T.Mesh(new T.SphereGeometry(.28,20,16),mat(T,0xfacc15));bull.position.z=.18;target.add(bull);
+ const stand=box(T,.18,3,.18,mat(T,0x64748b),0,1.5,-17);g.scene.add(stand);
+ g.camera.position.set(0,7,17);g.camera.lookAt(0,2,-9);
+ let done=false,shots=0;const ray=new T.Raycaster(),mouse=new T.Vector2();
+ g.viewport.addEventListener("pointerdown",e=>{if(done)return;const r=g.renderer.domElement.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;ray.setFromCamera(mouse,g.camera);if(ray.intersectObject(target,true).length){done=true;g.finish(true,"🎯 إصابة مباشرة! أحسنت التصويب.");}else{shots++;g.hint.textContent="لم تصب الهدف! حاول مرة أخرى.";if(shots>=5){done=true;g.finish(false,"انتهت المحاولات قبل إصابة الهدف.");}}});
+ g.render((dt,t)=>{if(done)return;target.position.set(Math.sin(t*1.25)*5,2.5+Math.sin(t*2.2)*1.25,-12);target.rotation.z=Math.sin(t)*.25;g.score.textContent="المحاولات: "+shots+"/5";});
+}
+function rocket(T,opts){
+ const g=createHost(T,{title:"🚀 قاعدة الصواريخ 3D",stats:opts.stats,hint:"اضغط على زر الإطلاق لتصيب الهدف المتحرك بالصاروخ. لديك ثلاث محاولات.",sky:0x111b3c,onSuccess:opts.onSuccess,onMiss:opts.onMiss});
+ floor(T,g.scene,0x374151,38,48);
+ const target=new T.Group();g.scene.add(target);
+ const core=sphere(T,.85,mat(T,0xf97316,.3),0,0,0);target.add(core);
+ const halo=new T.Mesh(new T.TorusGeometry(1.1,.12,10,32),mat(T,0xfacc15));target.add(halo);
+ const launcher=new T.Group();g.scene.add(launcher);
+ launcher.add(box(T,1.4,.5,1.8,mat(T,0x475569),0,.3,0));
+ const tube=new T.Mesh(new T.CylinderGeometry(.22,.3,2,16),mat(T,0x94a3b8));tube.rotation.x=Math.PI/2;tube.position.set(0,.7,-.5);launcher.add(tube);
+ const rocketMesh=new T.Group();g.scene.add(rocketMesh);
+ const body=new T.Mesh(new T.CylinderGeometry(.16,.16,1.2,16),mat(T,0xef4444));body.rotation.x=Math.PI/2;rocketMesh.add(body);
+ const nose=new T.Mesh(new T.ConeGeometry(.18,.42,16),mat(T,0xf8fafc));nose.rotation.x=-Math.PI/2;nose.position.z=-.8;rocketMesh.add(nose);
+ const flame=sphere(T,.18,mat(T,0xf59e0b),0,0,.7);rocketMesh.add(flame);rocketMesh.visible=false;
+ g.camera.position.set(0,7,20);g.camera.lookAt(0,2,-9);
+ let shots=0,flight=false,progress=0,done=false;
+ const fire=()=>{if(done||flight)return;if(shots>=3){done=true;g.finish(false,"نفدت الصواريخ!");return;}shots++;flight=true;progress=0;rocketMesh.position.set(0,1.2,8);rocketMesh.visible=true;g.score.textContent="الصواريخ: "+(3-shots)+"/3";};
+ makeButton("🚀 إطلاق الصاروخ",fire,g.controls,"background:#dc2626");
+ g.render((dt,t)=>{if(done)return;target.position.set(Math.sin(t*1.35)*4,3+Math.sin(t*2)*1.1,-13);target.rotation.y+=dt*1.8;if(flight){progress+=dt*9;rocketMesh.position.z=8-progress;rocketMesh.position.x+=(target.position.x-rocketMesh.position.x)*dt*1.7;rocketMesh.position.y+=(target.position.y-rocketMesh.position.y)*dt*1.7;rocketMesh.lookAt(target.position);if(rocketMesh.position.distanceTo(target.position)<1.15){done=true;flight=false;rocketMesh.visible=false;g.finish(true,"💥 إصابة الهدف! افتح السؤال.");}else if(progress>22){flight=false;rocketMesh.visible=false;if(shots>=3){done=true;g.finish(false,"أخطأت الصواريخ الثلاثة الهدف.");}else g.hint.textContent="أخطأت الهدف. أطلق مرة أخرى!";}}});
+}
 function treasure(T,opts){
  const g=createHost(T,{title:"🗝️ كنز المعرفة 3D",stats:opts.stats,hint:"حرّك المستكشف نحو صناديق الكنز باستخدام الأسهم أو الأزرار. كل صندوق يفتح سؤالًا جديدًا.",sky:0x87ceeb,onSuccess:opts.onSuccess,onMiss:opts.onMiss});
  floor(T,g.scene,0x6b9b45,40,90);
