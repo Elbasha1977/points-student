@@ -730,12 +730,27 @@ function questionHunterRenderIntro(game,session){
  const rocketTitle=dailyChallengeNode("div","تصويب صاروخ على الهدف المتحرك");rocketTitle.style.cssText="font-size:19px;font-weight:900;";
  const rocketInfo=dailyChallengeNode("div","أطلق صاروخًا أحمر في مسار مستقيم وحاول إصابة الهدف");rocketInfo.style.cssText="font-size:13px;line-height:1.6;color:#7f1d1d;";
  rocket.append(rocketIcon,rocketTitle,rocketInfo);rocket.onclick=()=>questionHunterStart("rocket");choices.appendChild(rocket);
+ const extraModes=[
+  {id:"treasure",icon:"🗝️",title:"كنز المعرفة",info:"التقط صندوق الكنز المتحرك لفتح السؤال",border:"#d97706",bg:"linear-gradient(145deg,#fffbeb,#fde68a)",color:"#92400e"},
+  {id:"basketball",icon:"🏀",title:"تحدي كرة السلة",info:"صوّب نحو السلة المتحركة لتسجل فرصة السؤال",border:"#ea580c",bg:"linear-gradient(145deg,#fff7ed,#fed7aa)",color:"#9a3412"},
+  {id:"race",icon:"🏎️",title:"سباق الأبطال",info:"التقط علم النهاية المتحرك لتتقدم في السباق",border:"#16a34a",bg:"linear-gradient(145deg,#f0fdf4,#bbf7d0)",color:"#166534"},
+  {id:"blocks",icon:"🧩",title:"تحدي المكعبات",info:"اضغط المكعب المضيء لتكمل البناء وتفتح السؤال",border:"#7c3aed",bg:"linear-gradient(145deg,#f5f3ff,#ddd6fe)",color:"#5b21b6"}
+ ];
+ extraModes.forEach(mode=>{
+  const card=dailyChallengeNode("button");card.type="button";
+  card.style.cssText="flex:1 1 230px;min-height:170px;border:3px solid "+mode.border+";border-radius:18px;padding:16px;background:"+mode.bg+";color:"+mode.color+";box-shadow:0 6px 18px rgba(15,23,42,.10);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;";
+  const icon=dailyChallengeNode("div",mode.icon);icon.style.cssText="font-size:52px;line-height:1.2;";
+  const heading=dailyChallengeNode("div",mode.title);heading.style.cssText="font-size:19px;font-weight:900;";
+  const info=dailyChallengeNode("div",mode.info);info.style.cssText="font-size:13px;line-height:1.6;text-align:center;";
+  card.append(icon,heading,info);card.onclick=()=>questionHunterStart(mode.id);choices.appendChild(card);
+ });
  host.appendChild(choices);
 }
 window.questionHunterStart=async function(mode="tap"){
  const state=window.__questionHunterState;if(!state)return;
- state.mode=mode==="rocket"?"rocket":"tap";
- questionHunterMessage("⏳ يتم تجهيز "+(state.mode==="rocket"?"قاعدة الصواريخ...":"ساحة التصويب")+"...");
+ state.mode=["rocket","treasure","basketball","race","blocks"].includes(mode)?mode:"tap";
+ const modeNames={tap:"ساحة التصويب",rocket:"قاعدة الصواريخ",treasure:"رحلة البحث عن الكنز",basketball:"ملعب كرة السلة",race:"مضمار السباق",blocks:"ساحة المكعبات"};
+ questionHunterMessage("⏳ يتم تجهيز "+(modeNames[state.mode]||"اللعبة")+"...");
  try{
   const response=await firebase.app().functions("us-central1").httpsCallable("startQuestionHunterGame")(state.identity);
   const data=response?.data||{};if(data.success!==true||!data.sessionId)throw Error("لم يؤكد الخادم بدء اللعبة.");
@@ -748,7 +763,48 @@ window.questionHunterStart=async function(mode="tap"){
 function questionHunterRenderSelectedShooter(session){
  const state=window.__questionHunterState;
  if(state?.mode==="rocket")questionHunterRenderRocketShooter(session);
+ else if(["treasure","basketball","race","blocks"].includes(state?.mode))questionHunterRenderArcadeMode(session,state.mode);
  else questionHunterRenderShooter(session);
+}
+function questionHunterRenderArcadeMode(session,mode){
+ questionHunterStopTargetMotion();
+ const config={
+  treasure:{icon:"🧰",title:"كنز المعرفة",prompt:"التقط صندوق الكنز المتحرك!",accent:"#d97706",border:"#f59e0b",bg:"radial-gradient(circle at 50% 45%,#78350f,#1c1917 78%)",radius:43},
+  basketball:{icon:"🏀",title:"تحدي كرة السلة",prompt:"صوّب نحو السلة المتحركة!",accent:"#ea580c",border:"#fb923c",bg:"radial-gradient(circle at 50% 45%,#7c2d12,#1c1917 78%)",radius:46},
+  race:{icon:"🏁",title:"سباق الأبطال",prompt:"التقط علم النهاية لتكمل السباق!",accent:"#16a34a",border:"#4ade80",bg:"radial-gradient(circle at 50% 45%,#14532d,#052e16 78%)",radius:45},
+  blocks:{icon:"🟪",title:"تحدي المكعبات",prompt:"اضغط المكعب المضيء لتكمل البناء!",accent:"#7c3aed",border:"#c4b5fd",bg:"radial-gradient(circle at 50% 45%,#4c1d95,#1e1b4b 78%)",radius:44}
+ }[mode];
+ const host=document.getElementById("questionHunterContent");host.replaceChildren();
+ const total=Number(session.questionCount||5),current=Number(session.questionIndex||0);
+ const top=dailyChallengeNode("div",config.title+" — الجولة "+(current+1)+" من "+total+" | النقاط: "+Number(session.score||0)+" | محاولة واحدة");top.style.cssText="text-align:center;font-weight:900;font-size:18px;color:"+config.accent+";padding:11px;background:#fff;border-radius:12px;margin-bottom:12px;";host.appendChild(top);
+ const field=dailyChallengeNode("div");field.setAttribute("role","application");field.setAttribute("aria-label",config.title);
+ field.style.cssText="position:relative;overflow:hidden;height:clamp(290px,52vw,380px);border-radius:20px;background:"+config.bg+";border:3px solid "+config.border+";margin:10px 0;touch-action:pan-y;user-select:none;cursor:crosshair;";
+ const stars=dailyChallengeNode("div","✦     ·       ✧       ·     ✦");stars.style.cssText="position:absolute;top:12px;left:0;right:0;color:#fef3c7;font-size:20px;text-align:center;pointer-events:none;";field.appendChild(stars);
+ const target=dailyChallengeNode("div",config.icon);target.setAttribute("aria-hidden","true");target.style.cssText="position:absolute;left:50%;top:50%;width:88px;height:88px;display:flex;align-items:center;justify-content:center;font-size:58px;border-radius:22px;transform:translate(-50%,-50%);background:rgba(255,255,255,.16);border:3px solid "+config.border+";box-shadow:0 0 25px "+config.border+",0 0 48px rgba(255,255,255,.18);z-index:2;pointer-events:none;";field.appendChild(target);
+ const caption=dailyChallengeNode("div",config.prompt);caption.style.cssText="position:absolute;bottom:12px;left:8px;right:8px;color:#fff;text-align:center;font-weight:900;font-size:16px;text-shadow:0 2px 4px #000;pointer-events:none;z-index:3;";field.appendChild(caption);host.appendChild(field);
+ const status=dailyChallengeNode("div","👀 راقب الهدف المتحرك واضغط عليه في الوقت المناسب.");status.style.cssText="text-align:center;color:"+config.accent+";font-weight:900;margin:12px 0 6px;min-height:28px;";host.appendChild(status);
+ const note=dailyChallengeNode("div","⚠️ لديك محاولة واحدة في هذه الجولة. إذا أخطأت، يتم تجاوز سؤال الجولة.");note.style.cssText="text-align:center;color:#b45309;margin-top:6px;font-size:14px;font-weight:bold;line-height:1.8;";host.appendChild(note);
+ let locked=false,last=0;const width=()=>field.clientWidth,height=()=>field.clientHeight,pad=config.radius+8;
+ let x=Math.max(pad,width()/2),y=Math.max(pad+12,height()/2);
+ const speed=150+current*28;let vx=speed*(Math.random()>.5?1:-1),vy=speed*.68*(Math.random()>.5?1:-1);
+ function animate(now){
+  if(locked||!field.isConnected)return;
+  const dt=last?Math.min((now-last)/1000,.045):0;last=now;
+  const w=width(),h=height(),minX=pad,maxX=Math.max(pad,w-pad),minY=pad+10,maxY=Math.max(pad+10,h-pad-28);
+  x+=vx*dt;y+=vy*dt;
+  if(x<minX){x=minX;vx=Math.abs(vx);}if(x>maxX){x=maxX;vx=-Math.abs(vx);}
+  if(y<minY){y=minY;vy=Math.abs(vy);}if(y>maxY){y=maxY;vy=-Math.abs(vy);}
+  target.style.left=x+"px";target.style.top=y+"px";window.__qhunterAnimationFrame=requestAnimationFrame(animate);
+ }
+ window.__qhunterAnimationFrame=requestAnimationFrame(animate);
+ field.addEventListener("pointerdown",event=>{
+  if(locked||event.isPrimary===false||(event.pointerType==="mouse"&&event.button!==0))return;
+  const rect=field.getBoundingClientRect(),px=event.clientX-rect.left,py=event.clientY-rect.top;
+  locked=true;questionHunterStopTargetMotion();const hit=Math.hypot(px-x,py-y)<=config.radius;
+  const marker=dailyChallengeNode("div",hit?"✨":"✕");marker.style.cssText="position:absolute;left:"+px+"px;top:"+py+"px;transform:translate(-50%,-50%);font-size:40px;font-weight:900;color:"+(hit?"#fde047":"#fb7185")+";text-shadow:0 2px 8px #000;pointer-events:none;z-index:5;";field.appendChild(marker);
+  if(hit){target.style.transform="translate(-50%,-50%) scale(1.3) rotate(12deg)";status.textContent="🎉 أحسنت! نجحت في التحدي!";caption.textContent="💥 نجاح!";setTimeout(()=>questionHunterHitTarget(false),400);}
+  else{status.textContent="💨 لم تصب الهدف! ضاعت فرصة هذه الجولة.";status.style.color="#b91c1c";caption.textContent="❌ انتهت فرصة الجولة";setTimeout(()=>questionHunterRecordMiss(current),300);}
+ });
 }
 function questionHunterRenderShooter(session){
  questionHunterStopTargetMotion();
@@ -897,7 +953,7 @@ function questionHunterRenderMissedRound(result){
  const title=dailyChallengeNode("h2","💨 ضاعت عليك الجولة!");title.style.cssText="text-align:center;color:#b91c1c;font-size:24px;";host.appendChild(title);
  const text=dailyChallengeNode("p","لم تصب الهدف في طلقتك الوحيدة، لذلك تم تجاوز سؤال هذه الجولة ولن تحصل على نقاطه.");text.style.cssText="text-align:center;line-height:1.9;font-weight:bold;color:#7f1d1d;";host.appendChild(text);
  const score=dailyChallengeNode("div","مجموع نقاطك: "+Number(result.score||0)+"  |  جولات فائتة: "+Number(result.missedShots||0));score.style.cssText="padding:14px;text-align:center;background:white;border-radius:12px;font-weight:900;font-size:18px;margin:12px 0;";host.appendChild(score);
- const next=dailyChallengeNode("button",result.completed?"🏆 عرض النتيجة النهائية":"🎯 انتقل إلى الهدف التالي");next.className="action-btn primary";next.style.cssText="width:100%;background:linear-gradient(135deg,#0284c7,#0f766e)";next.onclick=()=>result.completed?questionHunterRenderCompleted(result):questionHunterRenderShooter(result);host.appendChild(next);
+ const next=dailyChallengeNode("button",result.completed?"🏆 عرض النتيجة النهائية":"🎯 انتقل إلى الهدف التالي");next.className="action-btn primary";next.style.cssText="width:100%;background:linear-gradient(135deg,#0284c7,#0f766e)";next.onclick=()=>result.completed?questionHunterRenderCompleted(result):questionHunterRenderSelectedShooter(result);host.appendChild(next);
 }
 async function questionHunterHitTarget(resume){
  const state=window.__questionHunterState;if(!state?.sessionId)return;
