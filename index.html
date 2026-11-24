@@ -229,6 +229,12 @@ window.startStudentWorksheet = async function() {
         const img=document.getElementById('stImg');
         img.onload=()=>{
             const fieldsDiv=document.getElementById('stFields');fieldsDiv.innerHTML='';
+            const imageContainer=document.getElementById('stImgContainer');
+            let longAnswers=document.getElementById('stLongAnswers');
+            if(longAnswers)longAnswers.remove();
+            longAnswers=document.createElement('div');longAnswers.id='stLongAnswers';
+            longAnswers.style.cssText='display:flex;flex-direction:column;gap:16px;width:100%;margin:18px auto 0;text-align:right;';
+            imageContainer.insertAdjacentElement('afterend',longAnswers);
             window.currentStudentWorksheet.fields.forEach(f=>{
                 const el=document.createElement('div');
                 const renderedImage=document.getElementById('stImg');
@@ -236,12 +242,20 @@ window.startStudentWorksheet = async function() {
                 const scale=(renderedImage&&editorWidth>0)?renderedImage.clientWidth/editorWidth:1;
                 const fieldWidth=Number(f.wPct)>0?f.wPct+'%':(Number(f.w||0)*scale)+'px';
                 const fieldHeight=Number(f.hPct)>0?f.hPct+'%':(Number(f.h||0)*scale)+'px';
-                el.style.cssText=`position:absolute;box-sizing:border-box;background:#fef08a;border:2px dashed #ca8a04;border-radius:5px;display:flex;align-items:center;justify-content:center;left:${f.x}%;top:${f.y}%;width:${fieldWidth};height:${fieldHeight};max-width:100%;overflow:hidden;`;
-                let inputHtml='';
-                if(f.type==='short_text')inputHtml=`<input type="text" id="${f.id}" style="box-sizing:border-box;width:100%;height:100%;min-width:0;border:none;background:transparent;text-align:center;font-weight:bold;outline:none;font-size:clamp(10px,2.5vw,16px);">`;
-                else if(f.type==='long_text')inputHtml=`<textarea id="${f.id}" style="box-sizing:border-box;width:100%;height:100%;min-width:0;border:none;background:transparent;resize:none;outline:none;padding:3px;font-size:clamp(10px,2.5vw,16px);"></textarea>`;
-                else inputHtml=`<input type="text" id="${f.id}" style="box-sizing:border-box;width:100%;height:100%;min-width:0;border:none;background:transparent;text-align:center;font-weight:bold;outline:none;font-size:clamp(10px,2.5vw,16px);">`;
-                el.innerHTML=inputHtml;fieldsDiv.appendChild(el);
+                if(f.type==='long_text'){
+                    el.style.cssText='position:relative;box-sizing:border-box;width:100%;min-height:390px;padding:16px;background:#fff;border:2px solid #2563eb;border-radius:14px;display:flex;flex-direction:column;align-items:stretch;gap:10px;box-shadow:0 4px 14px rgba(37,99,235,.10);';
+                    const prompt=document.createElement('div');prompt.textContent=f.prompt||'اكتب إجابتك هنا';prompt.style.cssText='font-size:18px;font-weight:800;color:#1e3a8a;line-height:1.7;';
+                    const hint=document.createElement('div');hint.textContent='اكتب موضوعك هنا. يمكنك رؤية جميع الجمل ومراجعتها قبل الإرسال.';hint.style.cssText='font-size:14px;color:#475569;';
+                    el.append(prompt,hint);
+                    el.innerHTML+=`<textarea id="${f.id}" aria-label="إجابة نصية طويلة" placeholder="ابدأ الكتابة هنا... اكتب جملك السبع ثم راجعها." style="box-sizing:border-box;display:block;width:100%;min-height:285px;flex:1;border:1px solid #94a3b8;border-radius:10px;background:#f8fafc;resize:vertical;outline:none;padding:14px;font-size:18px;line-height:1.9;direction:ltr;text-align:left;white-space:pre-wrap;"></textarea><div style="font-size:13px;color:#64748b;text-align:left">يمكنك التمرير داخل الإجابة ومراجعتها وتعديلها قبل الإرسال.</div>`;
+                    longAnswers.appendChild(el);
+                }else{
+                    el.style.cssText=`position:absolute;box-sizing:border-box;background:#fef08a;border:2px dashed #ca8a04;border-radius:5px;display:flex;align-items:center;justify-content:center;left:${f.x}%;top:${f.y}%;width:${fieldWidth};height:${fieldHeight};max-width:100%;overflow:hidden;`;
+                    let inputHtml='';
+                    if(f.type==='short_text')inputHtml=`<input type="text" id="${f.id}" style="box-sizing:border-box;width:100%;height:100%;min-width:0;border:none;background:transparent;text-align:center;font-weight:bold;outline:none;font-size:clamp(10px,2.5vw,16px);">`;
+                    else inputHtml=`<input type="text" id="${f.id}" style="box-sizing:border-box;width:100%;height:100%;min-width:0;border:none;background:transparent;text-align:center;font-weight:bold;outline:none;font-size:clamp(10px,2.5vw,16px);">`;
+                    el.innerHTML=inputHtml;fieldsDiv.appendChild(el);
+                }
             });
         };
         img.onerror=()=>{
