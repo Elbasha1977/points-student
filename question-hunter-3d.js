@@ -40,8 +40,8 @@ function createHost(T,opts){
   if(!audioOn)return;
   try{audioCtx=audioCtx||(window.AudioContext||window.webkitAudioContext)&&new (window.AudioContext||window.webkitAudioContext)();if(!audioCtx)return;
    if(audioCtx.state==="suspended")audioCtx.resume();
-   const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.type=type;osc.frequency.setValueAtTime(freq,audioCtx.currentTime);if(slide)osc.frequency.exponentialRampToValueAtTime(Math.max(40,freq+slide),audioCtx.currentTime+duration);
-   gain.gain.setValueAtTime(volume,audioCtx.currentTime);gain.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+duration);osc.connect(gain);gain.connect(audioCtx.destination);osc.start();osc.stop(audioCtx.currentTime+duration);
+   const osc=audioCtx.createOscillator(),gain=audioCtx.createGain(),pan=audioCtx.createStereoPanner?audioCtx.createStereoPanner():null;osc.type=type;osc.frequency.setValueAtTime(freq,audioCtx.currentTime);if(slide)osc.frequency.exponentialRampToValueAtTime(Math.max(40,freq+slide),audioCtx.currentTime+duration);
+   gain.gain.setValueAtTime(volume,audioCtx.currentTime);gain.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+duration);osc.connect(gain);if(pan){pan.pan.setValueAtTime(Math.max(-.65,Math.min(.65,(freq-600)/1100)),audioCtx.currentTime);gain.connect(pan);pan.connect(audioCtx.destination);}else gain.connect(audioCtx.destination);osc.start();osc.stop(audioCtx.currentTime+duration);
   }catch(e){}
  }
  function sound(kind){
