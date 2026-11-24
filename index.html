@@ -84,6 +84,7 @@ body{margin:0;background:linear-gradient(135deg,#dbeafe,#c7d2fe);padding:14px;mi
   <div id="dailyChallengeContent" style="margin-top:14px;text-align:right">اضغط «تحميل التحدي» لعرض سؤال اليوم.</div>
  </div>
 </div>
+<script src="./question-hunter-3d.js"></script>
 <script>
 // Firebase client setup for the dedicated student portal.
 const firebaseConfig = {
@@ -731,10 +732,11 @@ function questionHunterRenderIntro(game,session){
  const rocketInfo=dailyChallengeNode("div","أطلق صاروخًا أحمر في مسار مستقيم وحاول إصابة الهدف");rocketInfo.style.cssText="font-size:13px;line-height:1.6;color:#7f1d1d;";
  rocket.append(rocketIcon,rocketTitle,rocketInfo);rocket.onclick=()=>questionHunterStart("rocket");choices.appendChild(rocket);
  const extraModes=[
-  {id:"treasure",icon:"🗝️",title:"كنز المعرفة",info:"التقط صندوق الكنز المتحرك لفتح السؤال",border:"#d97706",bg:"linear-gradient(145deg,#fffbeb,#fde68a)",color:"#92400e"},
-  {id:"basketball",icon:"🏀",title:"تحدي كرة السلة",info:"صوّب نحو السلة المتحركة لتسجل فرصة السؤال",border:"#ea580c",bg:"linear-gradient(145deg,#fff7ed,#fed7aa)",color:"#9a3412"},
-  {id:"race",icon:"🏎️",title:"سباق الأبطال",info:"التقط علم النهاية المتحرك لتتقدم في السباق",border:"#16a34a",bg:"linear-gradient(145deg,#f0fdf4,#bbf7d0)",color:"#166534"},
-  {id:"blocks",icon:"🧩",title:"تحدي المكعبات",info:"اضغط المكعب المضيء لتكمل البناء وتفتح السؤال",border:"#7c3aed",bg:"linear-gradient(145deg,#f5f3ff,#ddd6fe)",color:"#5b21b6"}
+  {id:"treasure",icon:"🗝️",title:"كنز المعرفة 3D",info:"تحرك بمستكشفك داخل عالم ثلاثي الأبعاد واجمع صناديق الكنز",border:"#d97706",bg:"linear-gradient(145deg,#fffbeb,#fde68a)",color:"#92400e"},
+  {id:"race",icon:"🏎️",title:"سباق الأبطال 3D",info:"قد سيارتك على مضمار حقيقي وتفادَ الحواجز حتى خط النهاية",border:"#16a34a",bg:"linear-gradient(145deg,#f0fdf4,#bbf7d0)",color:"#166534"},
+  {id:"blocks",icon:"🧊",title:"تحدي المكعبات 3D",info:"تحرك في عالم مكعبات ثلاثي الأبعاد واجمع المكعبات الذهبية",border:"#7c3aed",bg:"linear-gradient(145deg,#f5f3ff,#ddd6fe)",color:"#5b21b6"},
+  {id:"football",icon:"⚽",title:"ركلة الجزاء 3D",info:"اختر اتجاه التسديد وسدد الكرة أمام حارس مرمى متحرك",border:"#15803d",bg:"linear-gradient(145deg,#f0fdf4,#bbf7d0)",color:"#166534"},
+  {id:"thief",icon:"🚓",title:"STOP THIEF — امسك اللص",info:"طارد اللص في الشوارع وتفادَ السيارات حتى تمسك به",border:"#1d4ed8",bg:"linear-gradient(145deg,#eff6ff,#bfdbfe)",color:"#1e40af"}
  ];
  extraModes.forEach(mode=>{
   const card=dailyChallengeNode("button");card.type="button";
@@ -748,8 +750,8 @@ function questionHunterRenderIntro(game,session){
 }
 window.questionHunterStart=async function(mode="tap"){
  const state=window.__questionHunterState;if(!state)return;
- state.mode=["rocket","treasure","basketball","race","blocks"].includes(mode)?mode:"tap";
- const modeNames={tap:"ساحة التصويب",rocket:"قاعدة الصواريخ",treasure:"رحلة البحث عن الكنز",basketball:"ملعب كرة السلة",race:"مضمار السباق",blocks:"ساحة المكعبات"};
+ state.mode=["rocket","treasure","race","blocks","football","thief"].includes(mode)?mode:"tap";
+ const modeNames={tap:"ساحة التصويب",rocket:"قاعدة الصواريخ",treasure:"كنز المعرفة ثلاثي الأبعاد",race:"سباق الأبطال ثلاثي الأبعاد",blocks:"تحدي المكعبات ثلاثي الأبعاد",football:"ركلة الجزاء ثلاثية الأبعاد",thief:"مطاردة STOP THIEF"};
  questionHunterMessage("⏳ يتم تجهيز "+(modeNames[state.mode]||"اللعبة")+"...");
  try{
   const response=await firebase.app().functions("us-central1").httpsCallable("startQuestionHunterGame")(state.identity);
@@ -763,8 +765,19 @@ window.questionHunterStart=async function(mode="tap"){
 function questionHunterRenderSelectedShooter(session){
  const state=window.__questionHunterState;
  if(state?.mode==="rocket")questionHunterRenderRocketShooter(session);
- else if(["treasure","basketball","race","blocks"].includes(state?.mode))questionHunterRenderArcadeMode(session,state.mode);
+ else if(["treasure","race","blocks","football","thief"].includes(state?.mode))questionHunterRender3DGame(session,state.mode);
  else questionHunterRenderShooter(session);
+}
+function questionHunterRender3DGame(session,mode){
+ questionHunterStopTargetMotion();
+ window.__questionHunter3DExit=()=>questionHunterRenderIntro(window.__questionHunterState.game,window.__questionHunterState.session);
+ const host=document.getElementById("questionHunterContent");host.replaceChildren();
+ const loading=dailyChallengeNode("div","⏳ جارٍ بناء العالم ثلاثي الأبعاد...");loading.style.cssText="padding:32px;text-align:center;font-weight:900;color:#075985;";host.appendChild(loading);
+ window.QuestionHunter3D.start({
+  mode,session,
+  onSuccess:()=>questionHunterHitTarget(false),
+  onMiss:()=>questionHunterRecordMiss(Number(session.questionIndex||0))
+ });
 }
 function questionHunterRenderArcadeMode(session,mode){
  questionHunterStopTargetMotion();
