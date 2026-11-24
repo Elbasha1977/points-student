@@ -35,6 +35,21 @@ function createHost(T,opts){
  const viewport=document.createElement("div");viewport.style.cssText="height:clamp(300px,58vw,490px);min-height:300px;position:relative;border-radius:15px;overflow:hidden;background:#7dd3fc;touch-action:none;";
  const hint=document.createElement("div");hint.textContent=opts.hint;hint.style.cssText="text-align:center;padding:10px 4px 6px;font-weight:800;line-height:1.7;color:#e0f2fe;";
  const controls=document.createElement("div");controls.style.cssText="display:flex;justify-content:center;align-items:center;gap:9px;flex-wrap:wrap;padding:10px 0 4px;";
+ let audioCtx=null,audioOn=true,ambient=null;
+ function tone(freq,duration=.12,type="sine",volume=.055,slide=0){
+  if(!audioOn)return;
+  try{audioCtx=audioCtx||(window.AudioContext||window.webkitAudioContext)&&new (window.AudioContext||window.webkitAudioContext)();if(!audioCtx)return;
+   if(audioCtx.state==="suspended")audioCtx.resume();
+   const osc=audioCtx.createOscillator(),gain=audioCtx.createGain();osc.type=type;osc.frequency.setValueAtTime(freq,audioCtx.currentTime);if(slide)osc.frequency.exponentialRampToValueAtTime(Math.max(40,freq+slide),audioCtx.currentTime+duration);
+   gain.gain.setValueAtTime(volume,audioCtx.currentTime);gain.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+duration);osc.connect(gain);gain.connect(audioCtx.destination);osc.start();osc.stop(audioCtx.currentTime+duration);
+  }catch(e){}
+ }
+ function sound(kind){
+  const patterns={collect:[[660,.09,"sine"],[880,.14,"sine"]],jump:[[260,.1,"triangle",.05,320]],hit:[[180,.18,"sawtooth",.06,-90]],shoot:[[520,.08,"sawtooth",.04,600],[180,.16,"triangle",.04,-100]],goal:[[523,.12,"sine"],[659,.12,"sine"],[784,.2,"sine"]],win:[[523,.12,"triangle"],[659,.12,"triangle"],[784,.12,"triangle"],[1046,.3,"sine"]],miss:[[220,.22,"triangle",.05,-100]],engine:[[100,.15,"sawtooth",.025,35]],splash:[[420,.18,"sine",.045,-240]],whoosh:[[360,.18,"triangle",.04,520]]};
+  (patterns[kind]||patterns.collect).forEach((p,i)=>setTimeout(()=>tone(p[0],p[1],p[2],p[3]||.05,p[4]||0),i*105));
+ }
+ const soundToggle=document.createElement("button");soundToggle.type="button";soundToggle.textContent="🔊 الصوت يعمل";soundToggle.style.cssText="border:1px solid #67e8f9;border-radius:12px;padding:10px 13px;background:#164e63;color:white;font-weight:900;";
+ soundToggle.onclick=()=>{audioOn=!audioOn;soundToggle.textContent=audioOn?"🔊 الصوت يعمل":"🔇 الصوت مغلق";if(audioOn){tone(660,.12);}};controls.appendChild(soundToggle);
  const exit=document.createElement("button");exit.textContent="✕ خروج";exit.style.cssText="border:1px solid #94a3b8;border-radius:12px;padding:10px 14px;background:#334155;color:white;font-weight:800;margin-top:8px;";exit.onclick=()=>stop(true);
  wrap.append(head,viewport,hint,controls,exit);root.appendChild(wrap);
  const scene=new T.Scene();scene.background=new T.Color(opts.sky||0x8bd5f5);scene.fog=new T.Fog(opts.sky||0x8bd5f5,22,75);
@@ -47,7 +62,7 @@ function createHost(T,opts){
  if(window.ResizeObserver){resizeObs=new ResizeObserver(resize);resizeObs.observe(viewport);}else window.addEventListener("resize",resize);
  active={scene,camera,renderer,clock,raf,viewport,controls,wrap,ended,cleanup:()=>{ended=true;cancelAnimationFrame(raf);if(resizeObs)resizeObs.disconnect();else window.removeEventListener("resize",resize);renderer.dispose();renderer.domElement.remove();}};
  const cleanup=active.cleanup;
- return {scene,camera,renderer,clock,viewport,controls,hint,score,cleanup,render(fn){const tick=()=>{if(!active||active.ended)return;const dt=Math.min(clock.getDelta(),.04),t=clock.elapsedTime;fn(dt,t);renderer.render(scene,camera);active.raf=requestAnimationFrame(tick);};active.raf=requestAnimationFrame(tick);},finish(ok,message){if(!active||active.ended)return;active.ended=true;cancelAnimationFrame(active.raf);hint.textContent=message;controls.replaceChildren();const b=document.createElement("button");b.textContent=ok?"🎉 افتح السؤال":"انتهت المحاولة";b.style.cssText="border:0;border-radius:14px;padding:15px 22px;background:"+(ok?"#16a34a":"#b91c1c")+";color:white;font-size:18px;font-weight:900;";b.onclick=()=>{const cb=ok?opts.onSuccess:opts.onMiss;this.cleanup();if(cb)cb();};controls.appendChild(b);}};
+ return {scene,camera,renderer,clock,viewport,controls,hint,score,sound,cleanup,render(fn){const tick=()=>{if(!active||active.ended)return;const dt=Math.min(clock.getDelta(),.04),t=clock.elapsedTime;fn(dt,t);renderer.render(scene,camera);active.raf=requestAnimationFrame(tick);};active.raf=requestAnimationFrame(tick);},finish(ok,message){if(!active||active.ended)return;sound(ok?"win":"miss");active.ended=true;cancelAnimationFrame(active.raf);hint.textContent=message;controls.replaceChildren();const b=document.createElement("button");b.textContent=ok?"🎉 افتح السؤال":"انتهت المحاولة";b.style.cssText="border:0;border-radius:14px;padding:15px 22px;background:"+(ok?"#16a34a":"#b91c1c")+";color:white;font-size:18px;font-weight:900;";b.onclick=()=>{const cb=ok?opts.onSuccess:opts.onMiss;this.cleanup();if(cb)cb();};controls.appendChild(b);}};
 }
 function floor(T,scene,color=0x4d9b58,w=36,d=80){const g=box(T,w,.3,d,mat(T,color),0,-.18,-24);scene.add(g);return g;}
 function tree(T,scene,x,z){const trunk=box(T,.32,1.4,.32,mat(T,0x754323),x,.65,z);const crown=sphere(T,.95,mat(T,0x23864b),x,1.9,z);scene.add(trunk,crown);}
