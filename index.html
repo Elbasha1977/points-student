@@ -76,6 +76,11 @@ body{margin:0;background:linear-gradient(135deg,#dbeafe,#c7d2fe);padding:14px;mi
   <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2 style="color:#0369a1;margin:0">🎯 صائد الأسئلة</h2><button type="button" class="action-btn" onclick="closeQuestionHunter()" style="background:#64748b;padding:8px 12px">إغلاق</button></div>
   <div id="questionHunterContent" style="margin-top:14px;text-align:right"></div>
  </div>
+
+ <div class="section" id="goldenQuestionPanel" style="display:none;border:3px solid #d4a017;background:linear-gradient(135deg,#fffbeb,#fef3c7)">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2 style="color:#a16207;margin:0">👑 Golden Question — السؤال الذهبي</h2><button type="button" class="action-btn" onclick="closeGoldenQuestion()" style="background:#64748b">إغلاق</button></div>
+  <div id="goldenQuestionContent" style="margin-top:14px;text-align:right"></div>
+ </div>
  <div class="section" id="dailyChallengePanel" style="display:none;border:2px solid #f59e0b;background:linear-gradient(135deg,#fff7ed,#fffbeb)">
   <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
    <h2 style="color:#c2410c;margin:0">🔥 تحدي اليوم</h2>
@@ -1027,5 +1032,53 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+
+ // ==================== Golden Question student experience ====================
+ window.__goldenQuestionTimer=null;window.__goldenQuestionCurrent=null;
+ function goldenQuestionClearTimer(){if(window.__goldenQuestionTimer){clearInterval(window.__goldenQuestionTimer);window.__goldenQuestionTimer=null;}}
+ window.openGoldenQuestion=async function(){const panel=document.getElementById("goldenQuestionPanel");panel.style.display="block";panel.scrollIntoView({behavior:"smooth",block:"start"});await loadGoldenQuestion();};
+ window.closeGoldenQuestion=function(){goldenQuestionClearTimer();document.getElementById("goldenQuestionPanel").style.display="none";};
+ async function loadGoldenQuestion(){
+  goldenQuestionClearTimer();const host=document.getElementById("goldenQuestionContent");host.textContent="⏳ جارٍ تحميل السؤال الذهبي...";
+  try{const identity=await dailyChallengeIdentity();const r=await firebase.app().functions("us-central1").httpsCallable("getGoldenQuestion")(identity);const d=r.data||{};
+   if(!d.found){goldenQuestionMessage(d.message||"لا يوجد سؤال ذهبي منشور لفصلك اليوم.");return;}
+   window.__goldenQuestionCurrent=d;
+   if(["pending_review","approved","rejected"].includes(d.attemptState)){goldenQuestionMessage(d.attemptState==="pending_review"?"✅ وصلت إجابتك إلى المعلم، وهي بانتظار المراجعة.":d.attemptState==="approved"?"🏆 تم اعتماد إجابتك وإضافة "+Number(d.attemptResult?.awardedPoints||0)+" نقطة إلى رصيدك.":"تمت مراجعة إجابتك ولم تُعتمد هذه المرة.");return;}
+   if(d.attemptState==="expired"){goldenQuestionMessage("انتهى وقت محاولتك.");return;}
+   if(d.state==="upcoming"){goldenQuestionMessage("⏰ يفتح السؤال الذهبي في "+new Date(d.question.openAtMillis).toLocaleTimeString("ar-QA",{hour:"2-digit",minute:"2-digit"})+" بتوقيت قطر.");return;}
+   if(d.state==="closed"){goldenQuestionMessage("انتهى وقت السؤال الذهبي لهذا اليوم.");return;}
+   goldenQuestionIntro(d);
+  }catch(e){goldenQuestionMessage(e.message||"تعذر تحميل السؤال الذهبي.");}
+ }
+ function goldenQuestionMessage(text){goldenQuestionClearTimer();const host=document.getElementById("goldenQuestionContent");host.replaceChildren();const box=dailyChallengeNode("div",text);box.style.cssText="padding:15px;background:#fff;border-radius:12px;text-align:center;font-weight:bold;line-height:1.9;color:#854d0e";host.appendChild(box);}
+ function goldenQuestionIntro(d){const host=document.getElementById("goldenQuestionContent"),q=d.question||{};host.replaceChildren();
+  const info=dailyChallengeNode("div","🏆 يمكنك الحصول على "+Number(q.rewardPoints)+" نقطة بعد مراجعة المعلم. أمامك "+Number(q.durationSeconds)+" ثانية للإجابة.");info.style.cssText="padding:13px;background:#fff7d6;border-radius:12px;text-align:center;font-weight:bold;color:#854d0e";host.appendChild(info);
+  const btn=dailyChallengeNode("button","🚀 ابدأ السؤال الذهبي");btn.className="action-btn";btn.style.cssText="width:100%;margin-top:12px;background:linear-gradient(135deg,#b8860b,#facc15);color:#422006";btn.onclick=startGoldenQuestion;host.appendChild(btn);
+ }
+ async function startGoldenQuestion(){try{const identity=window.__dailyChallengeIdentity||await dailyChallengeIdentity();const r=await firebase.app().functions("us-central1").httpsCallable("startGoldenQuestionAttempt")(identity);const d=r.data||{};
+  if(d.alreadySubmitted){goldenQuestionMessage(d.status==="pending_review"?"إجابتك بانتظار مراجعة المعلم.":d.status==="approved"?"تم اعتماد إجابتك وحصلت على "+Number(d.awardedPoints)+" نقطة.":"تمت مراجعة إجابتك.");return;}
+  if(d.success!==true||!d.question)throw new Error("لم يؤكد الخادم بدء السؤال.");goldenQuestionRender(d.question,d.expiresAtMillis);
+ }catch(e){goldenQuestionMessage(e.message||"تعذر بدء السؤال.");}}
+ function goldenQuestionRender(q,expiresAt){goldenQuestionClearTimer();const host=document.getElementById("goldenQuestionContent");host.replaceChildren();
+  const title=dailyChallengeNode("h3","👑 "+q.title);title.style.cssText="color:#a16207;text-align:center";host.appendChild(title);
+  const timer=dailyChallengeNode("div","");timer.id="goldenQuestionTimer";timer.style.cssText="padding:11px;text-align:center;background:#854d0e;color:#fff;border-radius:12px;font-size:21px;font-weight:bold";host.appendChild(timer);
+  const prompt=dailyChallengeNode("p",q.question);prompt.style.cssText="font-size:19px;font-weight:bold;line-height:1.9";host.appendChild(prompt);
+  let answerInput=null;
+  if(q.type==="mcq"){(q.options||[]).forEach(o=>{const label=dailyChallengeNode("label");label.style.cssText="display:flex;gap:10px;align-items:center;padding:12px;margin:8px 0;background:#fff;border:1px solid #eab308;border-radius:12px";const radio=document.createElement("input");radio.type="radio";radio.name="goldenAnswer";radio.value=o.id;label.append(radio,dailyChallengeNode("span",o.text));host.appendChild(label);});}
+  else{const sentence=dailyChallengeNode("div",q.verbSentence);sentence.style.cssText="padding:13px;background:#fff7d6;border-radius:10px;font-size:20px;font-weight:bold;text-align:center";host.appendChild(sentence);answerInput=dailyChallengeNode("input");answerInput.id="goldenAnswerText";answerInput.placeholder="Write the corrected verb";answerInput.dir="ltr";answerInput.style.cssText="width:100%;padding:12px;border:1px solid #d4a017;border-radius:10px;margin-top:10px";host.appendChild(answerInput);}
+  const reason=dailyChallengeNode("textarea");reason.id="goldenExplanation";reason.placeholder="Explain in English why you chose this answer.";reason.dir="ltr";reason.lang="en";reason.maxLength=1000;reason.rows=4;reason.style.cssText="width:100%;padding:12px;border:1px solid #d4a017;border-radius:10px;margin-top:14px;direction:ltr;text-align:left";host.appendChild(dailyChallengeNode("label","Your explanation (English only):"));host.appendChild(reason);
+  const send=dailyChallengeNode("button","إرسال الإجابة للمراجعة");send.id="goldenQuestionSubmit";send.className="action-btn";send.style.cssText="width:100%;margin-top:12px;background:#a16207;color:white";send.onclick=submitGoldenQuestion;host.appendChild(send);
+  const tick=()=>{const n=Math.max(0,Math.ceil((Number(expiresAt)-Date.now())/1000)),el=document.getElementById("goldenQuestionTimer");if(el)el.textContent="⏳ "+Math.floor(n/60)+":"+String(n%60).padStart(2,"0");if(n<=0){goldenQuestionClearTimer();const b=document.getElementById("goldenQuestionSubmit");if(b){b.disabled=true;b.textContent="انتهى الوقت";}}};tick();window.__goldenQuestionTimer=setInterval(tick,1000);
+ }
+ async function submitGoldenQuestion(){const q=window.__goldenQuestionCurrent?.question||{};let answer="";
+  if(q.type==="mcq"){answer=document.querySelector('input[name="goldenAnswer"]:checked')?.value||"";if(!answer){alert("اختر إجابة أولاً.");return;}}
+  else{answer=String(document.getElementById("goldenAnswerText")?.value||"").trim();if(!answer){alert("اكتب الفعل بعد تصحيحه.");return;}}
+  const explanation=String(document.getElementById("goldenExplanation")?.value||"").trim();if(!explanation){alert("اكتب سبب اختيارك باللغة الإنجليزية.");return;}
+  if(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(explanation)){alert("يجب كتابة التفسير باللغة الإنجليزية فقط.");return;}
+  const btn=document.getElementById("goldenQuestionSubmit");btn.disabled=true;goldenQuestionClearTimer();
+  try{const identity=window.__dailyChallengeIdentity||await dailyChallengeIdentity();const r=await firebase.app().functions("us-central1").httpsCallable("submitGoldenQuestionAttempt")({...identity,answerType:q.type,answer,explanation});if(r.data?.success!==true)throw new Error("لم يؤكد الخادم استلام الإجابة.");goldenQuestionMessage("✅ تم إرسال إجابتك وتفسيرك باللغة الإنجليزية إلى المعلم. ستُضاف النقاط بعد المراجعة.");}
+  catch(e){btn.disabled=false;goldenQuestionMessage(e.message||"تعذر إرسال الإجابة.");}
+ }
+ 
 </script>
 </body></html>
