@@ -78,7 +78,7 @@ body{margin:0;background:linear-gradient(135deg,#dbeafe,#c7d2fe);padding:14px;mi
   <button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف في واجبات النقاط المنزلية</button>
   <button type="button" class="action-btn" onclick="openGoldenQuestion()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#b8860b,#facc15);color:#422006;font-size:18px;border:2px solid #fef3c7">👑 Golden Question — السؤال الذهبي</button>
   <button type="button" class="action-btn" onclick="openDailyChallenge()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#ea580c,#f59e0b);color:white">🔥 تحدي اليوم — فرصة جديدة لجمع النقاط</button>
-  <button type="button" id="questionHunterLaunchBtn" class="action-btn" onclick="openQuestionHunter()" style="display:none;width:100%;margin-top:10px;background:linear-gradient(135deg,#0f766e,#0891b2);color:white;font-size:18px">🎮 العب واكسب</button>
+  <button type="button" id="questionHunterLaunchBtn" class="action-btn" onclick="questionHunterLaunch()" style="display:block;width:100%;margin-top:10px;background:linear-gradient(135deg,#0f766e,#0891b2);color:white;font-size:18px">🎮 العب واكسب</button>
   <div id="questionHunterAvailabilityMsg" style="display:none;margin-top:8px;padding:10px;border-radius:10px;background:#eff6ff;color:#1e40af;font-size:13px;text-align:center;line-height:1.7"></div>
     <div id="myHomeworkResults" style="display:none;margin-top:14px;padding:12px;border-radius:10px;background:#ecfeff;text-align:right"></div>
  </div>
@@ -702,13 +702,13 @@ function dailyChallengeRenderResult(result,challenge){
 
 
  
-// Show the game launcher only when today's game has been published for the selected class.
-let questionHunterAvailabilitySequence = 0;
+// زر «العب واكسب» ظاهر دائمًا؛ الفحص يحدث عند ضغط الطالب عليه فقط.
 async function questionHunterResolveIdentity(){
  const cls=String(document.getElementById("stClass")?.value||"").trim();
  const name=String(document.getElementById("stName")?.value||"").trim();
  const pin=String(document.getElementById("stPin")?.value||"").trim();
- if(!cls||!name||!/^\d{4}$/.test(pin))return null;
+ if(!cls||!name)throw new Error("اختر الصف واسمك أولاً.");
+ if(!/^\\d{4}$/.test(pin))throw new Error("أدخل الرقم السري المكوّن من أربعة أرقام.");
  const response=await firebase.app().functions("us-central1").httpsCallable("getQuestionHunterStudentAvailability")({
   studentClass:cls,studentName:name,pin
  });
@@ -717,67 +717,43 @@ async function questionHunterResolveIdentity(){
  window.__questionHunterIdentity=data.identity;
  return data;
 }
-window.questionHunterCheckAvailability = async function(){
+window.questionHunterLaunch=async function(){
+ // أيام الإجازة: اعرض نافذة الإجازة فقط ولا تتصل بالخادم.
+ if(studentActivitiesHolidayGuard())return;
  const button=document.getElementById("questionHunterLaunchBtn");
  const status=document.getElementById("questionHunterAvailabilityMsg");
  if(!button)return;
- // لا تفحص تاريخ اللعبة ولا تتصل بالخادم في أيام إجازة الأنشطة.
- if(studentActivitiesAreOnHoliday()){
-  questionHunterAvailabilitySequence++;
-  button.style.display="none";
-  if(status){status.style.display="none";status.textContent="";}
-  window.__questionHunterIdentity=null;
-  return;
- }
- const sequence=++questionHunterAvailabilitySequence;
- button.style.display="none";
- window.__questionHunterIdentity=null;
- const cls=String(document.getElementById("stClass")?.value||"").trim();
- const name=String(document.getElementById("stName")?.value||"").trim();
- const pin=String(document.getElementById("stPin")?.value||"").trim();
- if(!cls||!name||!pin){
-  if(status){status.style.display="none";status.textContent="";}
-  return;
- }
- if(!/^[0-9]{4}$/.test(pin)){
-  if(status){status.style.display="block";status.textContent="أدخل الرقم السري المكوّن من أربعة أرقام للتحقق من اللعبة.";}
-  return;
- }
- if(status){status.style.display="block";status.textContent="⏳ جارٍ التحقق من اللعبة المنشورة لشعبتك...";}
+ const originalText=button.textContent;
+ button.disabled=true;
+ button.textContent="⏳ جارٍ التحقق من اللعبة...";
+ if(status){status.style.display="none";status.textContent="";}
  try{
   const data=await questionHunterResolveIdentity();
-  if(sequence!==questionHunterAvailabilitySequence)return;
-  button.style.display=data.found===true?"block":"none";
-  if(status){
-   status.style.display=data.found===true?"none":"block";
-   status.textContent=(data.message||"لا توجد لعبة منشورة لشعبتك اليوم.")+(data.dateKey?"\\nتاريخ اللعبة الذي يفحصه النظام: "+data.dateKey:"")+(data.otherDate?"\\nوجدنا لعبة سابقة بتاريخ: "+data.otherDate:"");
+  if(data.found!==true){
+   if(status){
+    status.style.display="block";
+    status.style.background="#fff7ed";
+    status.style.color="#9a3412";
+    status.textContent=(data.message||"لا توجد لعبة منشورة لشعبتك اليوم. ترقب اللعبة القادمة! 🎯")+
+      (data.dateKey?"\\nتاريخ اللعبة الذي يفحصه النظام: "+data.dateKey:"")+
+      (data.otherDate?"\\nوجدنا لعبة سابقة بتاريخ: "+data.otherDate:"");
+   }
+   return;
   }
+  if(status){status.style.display="none";status.textContent="";}
+  await openQuestionHunter();
  }catch(error){
-  if(sequence!==questionHunterAvailabilitySequence)return;
-  button.style.display="none";
   if(status){
    status.style.display="block";
-   status.textContent=error.message||"تعذر التحقق من بيانات الطالب. راجع الرقم السري وحاول مرة أخرى.";
    status.style.background="#fef2f2";
    status.style.color="#991b1b";
+   status.textContent=error.message||"تعذر التحقق من اللعبة. راجع بياناتك وحاول مرة أخرى.";
   }
-  console.warn("Question Hunter availability check:",error);
+ }finally{
+  button.disabled=false;
+  button.textContent=originalText;
  }
 };
-const originalQuestionHunterPopulateNames=window.populateStudentNames;
-if(typeof originalQuestionHunterPopulateNames==="function"){
- window.populateStudentNames=function(){
-  const result=originalQuestionHunterPopulateNames.apply(this,arguments);
-  window.questionHunterCheckAvailability();
-  return result;
- };
-}
-const questionHunterPinField=document.getElementById("stPin");
-const questionHunterNameField=document.getElementById("stName");
-const questionHunterClassField=document.getElementById("stClass");
-if(questionHunterPinField)questionHunterPinField.addEventListener("input",()=>window.questionHunterCheckAvailability());
-if(questionHunterNameField)questionHunterNameField.addEventListener("change",()=>window.questionHunterCheckAvailability());
-if(questionHunterClassField)questionHunterClassField.addEventListener("change",()=>window.questionHunterCheckAvailability());
 // ==================== صائد الأسئلة — Question Hunter ====================
 window.__questionHunterState=null;
 function questionHunterStopTargetMotion(){
