@@ -295,7 +295,8 @@ window.startStudentWorksheet = async function() {
     const startBtn=document.getElementById('stStartBtn');
     if(!cls || !name) return alert('الرجاء اختيار الصف واسم الطالب من القائمة');
     if(!/^\d{4}$/.test(pin)) return alert('أدخل الرقم السري المكوّن من 4 أرقام.');
-    if(!window.currentStudentWorksheet || !window.currentStudentWorksheet.imageUrl) return alert('لم يتم تحميل صورة ورقة العمل بعد. يرجى تحديث الصفحة والمحاولة مرة أخرى.');
+    const interactiveMode = window.currentStudentWorksheet && window.currentStudentWorksheet.layoutMode === 'interactive';
+    if(!window.currentStudentWorksheet || (!interactiveMode && !window.currentStudentWorksheet.imageUrl)) return alert('لم يتم تحميل ورقة العمل بصورة صحيحة. يرجى تحديث الصفحة والمحاولة مرة أخرى.');
     if(window.currentStudentWorksheet.active === false) return alert('أوقف المعلم حل هذه الورقة مؤقتًا. يمكنك المحاولة مرة أخرى بعد إعادة تفعيلها.');
     const schoolId = String(window.currentStudentWorksheet.schoolId || 'global');
     const studentKey = await homeworkSha256(schoolId + '|' + cls + '|' + homeworkNormalizeName(name));
@@ -317,6 +318,66 @@ window.startStudentWorksheet = async function() {
         document.getElementById('stWorkspace').style.display='block';
         document.getElementById('stSubmitArea').style.display='block';
         if(result.expiresAtMillis)runStudentWorksheetTimer(Number(result.expiresAtMillis));
+        if (interactiveMode) {
+            const imageContainer = document.getElementById('stImgContainer');
+            imageContainer.style.display = 'none';
+            let oldLong = document.getElementById('stLongAnswers');
+            if (oldLong) oldLong.remove();
+            let host = document.getElementById('stInteractiveFields');
+            if (!host) {
+                host = document.createElement('div');
+                host.id = 'stInteractiveFields';
+                imageContainer.insertAdjacentElement('afterend', host);
+            }
+            host.replaceChildren();
+            host.style.cssText = 'display:flex;flex-direction:column;gap:12px;width:100%;max-width:850px;margin:8px auto;text-align:right;';
+            const fields = Array.isArray(window.currentStudentWorksheet.fields) ? window.currentStudentWorksheet.fields : [];
+            let lastSection = '';
+            fields.forEach(function(field,index) {
+                if (field.section && field.section !== lastSection) {
+                    const heading = document.createElement('h3');
+                    heading.textContent = field.section;
+                    heading.style.cssText = 'margin:20px 0 2px;padding:12px 14px;background:#dbeafe;color:#1e3a8a;border-radius:12px;font-size:18px;';
+                    host.appendChild(heading);
+                    lastSection = field.section;
+                }
+                const card = document.createElement('section');
+                card.style.cssText = 'padding:14px;background:#fff;border:1px solid #cbd5e1;border-radius:13px;box-shadow:0 2px 7px #0000000a;';
+                const prompt = document.createElement('div');
+                prompt.textContent = (index+1)+'. '+String(field.prompt||'أجب عن السؤال');
+                prompt.style.cssText = 'font-size:16px;font-weight:800;color:#1e293b;line-height:1.8;margin-bottom:8px;';
+                card.appendChild(prompt);
+                if (field.context) {
+                    const context = document.createElement('div');
+                    context.textContent = String(field.context);
+                    context.style.cssText = 'font-size:13px;line-height:1.7;color:#475569;background:#f8fafc;padding:8px 10px;border-radius:8px;margin-bottom:9px;';
+                    card.appendChild(context);
+                }
+                let control;
+                if (field.type === 'choice' && Array.isArray(field.options)) {
+                    control = document.createElement('select');
+                    control.appendChild(new Option('-- اختر الإجابة --',''));
+                    field.options.forEach(function(option) {
+                        control.appendChild(new Option(String(option.label||option.value),String(option.value)));
+                    });
+                } else {
+                    control = document.createElement('input');
+                    control.type = 'text';
+                    control.placeholder = field.section && field.section.indexOf('Writing') === 0 ? 'اكتب الجملة هنا...' : 'اكتب إجابتك هنا...';
+                }
+                control.id = field.id;
+                control.autocomplete = 'off';
+                control.style.cssText = 'display:block;width:100%;box-sizing:border-box;padding:12px;border:2px solid #bfdbfe;border-radius:9px;background:#f8fafc;font-size:16px;direction:ltr;text-align:left;';
+                card.appendChild(control);
+                const score = document.createElement('small');
+                score.textContent = 'درجة السؤال: '+Number(field.points||1)+' نقطة';
+                score.style.cssText = 'display:block;margin-top:7px;color:#64748b;';
+                card.appendChild(score);
+                host.appendChild(card);
+            });
+            if (!fields.length) throw new Error('لم يتم تحميل أسئلة الملزمة.');
+            return;
+        }
         const img=document.getElementById('stImg');
         img.onload=()=>{
             const fieldsDiv=document.getElementById('stFields');fieldsDiv.innerHTML='';
