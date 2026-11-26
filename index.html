@@ -749,7 +749,8 @@ function questionHunterRenderIntro(game,session){
   {id:"space",icon:"🚀",title:"رائد الفضاء 3D",info:"اقفز بين النجوم وتجنب النيازك في الفضاء",border:"#6366f1",bg:"linear-gradient(145deg,#eef2ff,#c7d2fe)",color:"#312e81"},
   {id:"jungle",icon:"🌴",title:"مغامرة الغابة 3D",info:"اركض واقفز فوق العوائق واجمع الحروف الذهبية",border:"#15803d",bg:"linear-gradient(145deg,#f0fdf4,#bbf7d0)",color:"#14532d"},
   {id:"courier",icon:"📦",title:"ساعي البريد السريع 3D",info:"قد مركبة التوصيل واجمع الطرود وتفادَ العوائق",border:"#ca8a04",bg:"linear-gradient(145deg,#fefce8,#fde68a)",color:"#854d0e"},
-  {id:"castle",icon:"🏰",title:"حارس القلعة 3D",info:"صوّب نحو الأهداف المتحركة واحمِ القلعة",border:"#7c3aed",bg:"linear-gradient(145deg,#f5f3ff,#ddd6fe)",color:"#5b21b6"}
+  {id:"castle",icon:"🏰",title:"حارس القلعة 3D",info:"أصب الهدف المتحرك بسهم واحد",border:"#7c3aed",bg:"linear-gradient(145deg,#f5f3ff,#ddd6fe)",color:"#5b21b6"},
+  {id:"maze",icon:"🧭",title:"متاهة الأبطال 3D",info:"اجمع المفاتيح الثلاثة وافتح بوابة الخروج",border:"#0f766e",bg:"linear-gradient(145deg,#ecfeff,#a5f3fc)",color:"#115e59"}
  ];
  extraModes.forEach(mode=>{
   const card=dailyChallengeNode("button");card.type="button";
@@ -763,8 +764,8 @@ function questionHunterRenderIntro(game,session){
 }
 window.questionHunterStart=async function(mode="tap"){
  const state=window.__questionHunterState;if(!state)return;
- state.mode=["tap","rocket","treasure","race","blocks","football","thief","pyramids","underwater","space","jungle","courier","castle"].includes(mode)?mode:"tap";
- const modeNames={tap:"ساحة التصويب ثلاثية الأبعاد",rocket:"قاعدة الصواريخ ثلاثية الأبعاد",treasure:"كنز المعرفة ثلاثي الأبعاد",race:"سباق الأبطال ثلاثي الأبعاد",blocks:"تحدي المكعبات ثلاثي الأبعاد",football:"ركلة الجزاء ثلاثية الأبعاد",thief:"مطاردة STOP THIEF",pyramids:"مغامرة الأهرامات ثلاثية الأبعاد",underwater:"أعماق البحار ثلاثية الأبعاد",space:"رائد الفضاء ثلاثي الأبعاد",jungle:"مغامرة الغابة ثلاثية الأبعاد",courier:"ساعي البريد السريع ثلاثي الأبعاد",castle:"حارس القلعة ثلاثي الأبعاد"};
+ state.mode=["tap","rocket","treasure","race","blocks","football","thief","pyramids","underwater","space","jungle","courier","castle","maze"].includes(mode)?mode:"tap";
+ const modeNames={tap:"ساحة التصويب ثلاثية الأبعاد",rocket:"قاعدة الصواريخ ثلاثية الأبعاد",treasure:"كنز المعرفة ثلاثي الأبعاد",race:"سباق الأبطال ثلاثي الأبعاد",blocks:"تحدي المكعبات ثلاثي الأبعاد",football:"ركلة الجزاء ثلاثية الأبعاد",thief:"مطاردة STOP THIEF",pyramids:"مغامرة الأهرامات ثلاثية الأبعاد",underwater:"أعماق البحار ثلاثية الأبعاد",space:"رائد الفضاء ثلاثي الأبعاد",jungle:"مغامرة الغابة ثلاثية الأبعاد",courier:"ساعي البريد السريع ثلاثي الأبعاد",castle:"حارس القلعة ثلاثي الأبعاد",maze:"متاهة الأبطال ثلاثية الأبعاد"};
  questionHunterMessage("⏳ يتم تجهيز "+(modeNames[state.mode]||"اللعبة")+"...");
  try{
   const response=await firebase.app().functions("us-central1").httpsCallable("startQuestionHunterGame")(state.identity);
@@ -777,7 +778,7 @@ window.questionHunterStart=async function(mode="tap"){
 };
 function questionHunterRenderSelectedShooter(session){
  const state=window.__questionHunterState;
- if(["tap","rocket","treasure","race","blocks","football","thief","pyramids","underwater","space","jungle","courier","castle"].includes(state?.mode))questionHunterRender3DGame(session,state.mode);
+ if(["tap","rocket","treasure","race","blocks","football","thief","pyramids","underwater","space","jungle","courier","castle","maze"].includes(state?.mode))questionHunterRender3DGame(session,state.mode);
  else questionHunterRenderShooter(session);
 }
 function questionHunterRender3DGame(session,mode){
