@@ -155,31 +155,52 @@ const arabicHints={
 };
 const hintWords=Object.keys(arabicHints).sort((a,b)=>b.length-a.length);
 function addArabicHints(node){
-const walker=document.createTreeWalker(node,NodeFilter.SHOW_TEXT);const texts=[];
-while(walker.nextNode())texts.push(walker.currentNode);
-texts.forEach(t=>{
-const raw=t.nodeValue;
-const re=new RegExp('('+hintWords.join('|')+')','gi');
-let m,last=0;const frag=document.createDocumentFragment();let changed=false;
-while((m=re.exec(raw))){
-let before=raw.slice(last,m.index);
-if(before){
-if(/\\s$/.test(before))before=before.slice(0,-1)+'\\u00a0';
-frag.append(document.createTextNode(before));
-}
-const key=m[0].toLowerCase();
-const span=el('span','vocab-hint',m[0]);
-span.title=arabicHints[key];
-span.setAttribute('aria-label',m[0]+' — '+arabicHints[key]);
-frag.append(span);last=m.index+m[0].length;changed=true;
-}
-if(changed){
-let tail=raw.slice(last);
-if(tail&&/^\\s/.test(tail))tail='\\u00a0'+tail.slice(1);
-if(tail)frag.append(document.createTextNode(tail));
-t.parentNode.replaceChild(frag,t);
-}
-});
+  // Preserve every original character (especially spaces) around hinted words.
+  // Only wrap the matched word itself; never trim or rewrite adjacent text.
+  const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+  while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+  const escapedWords = hintWords.map(word =>
+    word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  );
+  const pattern = new RegExp('(' + escapedWords.join('|') + ')', 'gi');
+
+  textNodes.forEach(textNode => {
+    const original = textNode.nodeValue;
+    let match;
+    let lastIndex = 0;
+    let changed = false;
+    const fragment = document.createDocumentFragment();
+
+    pattern.lastIndex = 0;
+    while ((match = pattern.exec(original)) !== null) {
+      if (match.index > lastIndex) {
+        fragment.appendChild(
+          document.createTextNode(original.slice(lastIndex, match.index))
+        );
+      }
+
+      const word = match[0];
+      const key = word.toLowerCase();
+      const span = el('span', 'vocab-hint', word);
+      span.title = arabicHints[key];
+      span.setAttribute('aria-label', word + ' — ' + arabicHints[key]);
+      fragment.appendChild(span);
+
+      lastIndex = match.index + word.length;
+      changed = true;
+    }
+
+    if (changed) {
+      if (lastIndex < original.length) {
+        fragment.appendChild(
+          document.createTextNode(original.slice(lastIndex))
+        );
+      }
+      textNode.parentNode.replaceChild(fragment, textNode);
+    }
+  });
 }
 
 function getVal(id){const x=document.getElementById(id);return x?String(x.value||'').trim():'';}
