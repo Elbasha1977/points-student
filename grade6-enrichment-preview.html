@@ -157,7 +157,9 @@ const marker=prompt.match(/\(Correct the (?:verb|word|pronoun)\)/i);
 let target='';
 if(/How many coffee/i.test(prompt)||/How many milk/i.test(prompt))target='many';
 else if(/How much apples/i.test(prompt))target='much';
-else if(/Can you give them to me/i.test(prompt)||/Can you open them/i.test(prompt))target='them';
+else if(/Can you give them to me/i.test(prompt)||/Can you open them/i.test(prompt)||/Can you help me carry them/i.test(prompt))target='them';
+else if(/How many tea do you drink every night/i.test(prompt))target='many';
+else if(/How much tables did you buy last week/i.test(prompt))target='much';
 else if(marker&&/Correct the verb/i.test(marker[0])){
 const verbTargets=[
 [/Ali play football yesterday/i,'play'],
