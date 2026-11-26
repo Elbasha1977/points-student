@@ -93,7 +93,7 @@ body{margin:0;background:linear-gradient(135deg,#dbeafe,#c7d2fe);padding:14px;mi
   <button type="button" class="action-btn" onclick="openDailyChallenge()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#ea580c,#f59e0b);color:white">🔥 تحدي اليوم</button>
   <div id="studentHomeworkHonorBoard" style="display:none;margin-top:16px;padding:16px;border-radius:16px;background:linear-gradient(135deg,#fffbeb,#fef3c7);text-align:right"></div>
  </div>
- <div class="section" id="stSuccess" style="display:none;text-align:center"><h1 style="font-size:60px">🎉</h1><h2 style="color:#16a34a">تم إرسال إجاباتك بنجاح!</h2><p style="color:#166534;font-weight:bold">تم تسجيل إجابتك. لا يمكن إعادة إرسال هذه الورقة مرة أخرى.</p><button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:18px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف</button>
+ <div class="section" id="stSuccess" style="display:none;text-align:center"><h1 style="font-size:60px">🎉</h1><h2 style="color:#16a34a">تم إرسال إجاباتك بنجاح!</h2><p style="color:#166534;font-weight:bold">تم تسجيل إجابتك في هذه الدورة. يمكنك حل الورقة مرة أخرى بعد أن يعيد المعلم تفعيلها.</p><button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:18px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف</button>
  <button type="button" class="action-btn" onclick="openDailyChallenge()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#ea580c,#f59e0b);color:white">🔥 تحدي اليوم</button><div id="studentHomeworkHonorBoardSuccess" style="display:none;margin-top:16px;padding:16px;border-radius:16px;background:linear-gradient(135deg,#fffbeb,#fef3c7);text-align:right"></div></div>
  <div class="section" id="questionHunterPanel" style="display:none;border:2px solid #0ea5e9;background:linear-gradient(135deg,#eff6ff,#ecfeff)">
   <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2 style="color:#0369a1;margin:0">🎯 صائد الأسئلة</h2><button type="button" class="action-btn" onclick="closeQuestionHunter()" style="background:#64748b;padding:8px 12px">إغلاق</button></div>
@@ -213,8 +213,11 @@ setTimeout(() => {
             window.currentStudentWorksheet = doc.data();
             if (titleEl) titleEl.innerText = window.currentStudentWorksheet.title || 'ورقة العمل';
             if (startBtn) {
-                startBtn.disabled = false;
-                startBtn.textContent = '🚀 ابدأ الإجابة';
+                const worksheetActive = window.currentStudentWorksheet.active !== false;
+                startBtn.disabled = !worksheetActive;
+                startBtn.textContent = worksheetActive
+                    ? '🚀 ابدأ الإجابة'
+                    : '⏸️ الحل متوقف — انتظر إعادة تفعيل المعلم';
             }
         } else {
             if (titleEl) titleEl.innerText = '❌ الورقة غير موجودة أو تم حذفها';
@@ -293,6 +296,7 @@ window.startStudentWorksheet = async function() {
     if(!cls || !name) return alert('الرجاء اختيار الصف واسم الطالب من القائمة');
     if(!/^\d{4}$/.test(pin)) return alert('أدخل الرقم السري المكوّن من 4 أرقام.');
     if(!window.currentStudentWorksheet || !window.currentStudentWorksheet.imageUrl) return alert('لم يتم تحميل صورة ورقة العمل بعد. يرجى تحديث الصفحة والمحاولة مرة أخرى.');
+    if(window.currentStudentWorksheet.active === false) return alert('أوقف المعلم حل هذه الورقة مؤقتًا. يمكنك المحاولة مرة أخرى بعد إعادة تفعيلها.');
     const schoolId = String(window.currentStudentWorksheet.schoolId || 'global');
     const studentKey = await homeworkSha256(schoolId + '|' + cls + '|' + homeworkNormalizeName(name));
     const pinHash = await homeworkSha256(studentKey + '|' + pin);
@@ -491,7 +495,8 @@ window.submitStudentAnswers = async function(autoSubmit=false) {
         stopStudentWorksheetTimer();
         document.getElementById('stWorkspace').style.display='none';document.getElementById('stSubmitArea').style.display='none';
         document.getElementById('stSuccess').style.display='block';
-        document.getElementById('stSuccess').insertAdjacentHTML('beforeend','<p style="color:#166534;font-weight:bold">تم تسجيل إجابتك. لا يمكن إعادة إرسال هذه الورقة مرة أخرى.</p>');
+        // Each teacher reactivation creates a new server-side attempt cycle.
+        // The student returns to the link after the teacher reopens the worksheet.
     }catch(error){
         console.error('Student answers submit error:',error);
         alert(error.message||'تعذر إرسال الإجابات.');
