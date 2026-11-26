@@ -106,26 +106,44 @@ const firestoreDb = firebase.firestore();
 
 // ==================== أيام إجازة الأنشطة الأسبوعية ====================
 // الأنشطة متاحة من الأحد إلى الأربعاء بتوقيت قطر فقط.
-function studentActivitiesHolidayGuard(){
+function studentActivitiesAreOnHoliday(){
   const weekday = new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Qatar",weekday:"short"}).format(new Date());
-  if(["Thu","Fri","Sat"].includes(weekday)){
-    alert("🌿 إجازة سعيدة يا طلابي الأعزاء!\n\nاليوم إجازة لكم، فلا يوجد واجب ولا تحدٍّ ولا سؤال ذهبي ولا ألعاب مطلوبة منكم.\nاستمتعوا بوقتكم، وارتاحوا، واقضوا عطلة جميلة مع أسرتكم. نلقاكم بكل نشاط يوم الأحد بإذن الله! 💙");
+  return ["Thu","Fri","Sat"].includes(weekday);
+}
+function studentActivitiesHolidayMessage(){
+  return "🌿 إجازة سعيدة يا طلابي الأعزاء!\\n\\nاليوم إجازة لكم، فلا يوجد واجب ولا تحدٍّ ولا سؤال ذهبي ولا ألعاب مطلوبة منكم.\\nاستمتعوا بوقتكم، وارتاحوا، واقضوا عطلة جميلة مع أسرتكم. نلقاكم بكل نشاط يوم الأحد بإذن الله! 💙";
+}
+function studentActivitiesHolidayGuard(){
+  if(studentActivitiesAreOnHoliday()){
+    alert(studentActivitiesHolidayMessage());
     return true;
   }
   return false;
 }
+function enforceStudentHolidayView(){
+  if(!studentActivitiesAreOnHoliday()) return;
+  ["dailyChallengePanel","goldenQuestionPanel","questionHunterPanel"].forEach(id=>{
+    const panel=document.getElementById(id);
+    if(panel) panel.style.display="none";
+  });
+  if(typeof dailyChallengeClearTimer==="function") dailyChallengeClearTimer();
+  if(typeof goldenQuestionClearTimer==="function") goldenQuestionClearTimer();
+  if(typeof questionHunterStopTargetMotion==="function") questionHunterStopTargetMotion();
+}
+if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",enforceStudentHolidayView,{once:true});
+else enforceStudentHolidayView();
 document.addEventListener("click",function(event){
   const button=event.target.closest("button");
   if(!button)return;
+  const action=button.getAttribute("onclick")||"";
+  const isActivityEntry=/openDailyChallenge|openGoldenQuestion|openQuestionHunter|startStudentWorksheet/.test(action);
   const inRestrictedPanel=button.closest("#dailyChallengePanel,#goldenQuestionPanel,#questionHunterPanel");
-  const isCloseButton=/close(DailyChallenge|GoldenQuestion|QuestionHunter)/.test(button.getAttribute("onclick")||"");
+  const isCloseButton=/close(DailyChallenge|GoldenQuestion|QuestionHunter)/.test(action);
   const isHomeworkStart=button.id==="stStartBtn";
-  const isHomeworkSubmit=!!button.closest("#stSubmitArea") && !/showStudentHomeworkHonorBoard/.test(button.getAttribute("onclick")||"");
-  if((inRestrictedPanel&&!isCloseButton)||isHomeworkStart||isHomeworkSubmit){
-    if(studentActivitiesHolidayGuard()){
-      event.preventDefault();
-      event.stopImmediatePropagation();
-    }
+  const isHomeworkSubmit=!!button.closest("#stSubmitArea") && !/showStudentHomeworkHonorBoard/.test(action);
+  if((isActivityEntry||isHomeworkStart||isHomeworkSubmit||(inRestrictedPanel&&!isCloseButton))&&studentActivitiesHolidayGuard()){
+    event.preventDefault();
+    event.stopImmediatePropagation();
   }
 },true);
 
