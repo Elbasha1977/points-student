@@ -149,15 +149,23 @@ const used=new Set(),values={};let currentSection='';
 function el(tag,cls,text){const x=document.createElement(tag);if(cls)x.className=cls;if(text!==undefined)x.textContent=text;return x;}
 function getVal(id){const x=document.getElementById(id);return x?String(x.value||'').trim():'';}
 function setVal(id,v){const x=document.getElementById(id);if(x)x.value=v;}
-function makeCard(f,i){const c=el('section','card');if(f.context)c.append(el('div','context',f.context));const p=el('div','prompt');p.append(document.createTextNode((i+1)+'. '));let prompt=String(f.prompt||'');let target='';
-if(f.type==='correct_verb'){
-const candidates=['cleaned','wearing','finished','planting','showed','climbed','cooked','drinking','stopped','playing','washed','walked','moving','has','play','climb','cook','move','plant','show','walk','work','stop'];
-const before=prompt.replace(/\\s*\\(Correct the verb\\)/i,'');
-const rx=/\\b(cleaned|wearing|finished|planting|showed|climbed|cooked|drinking|stopped|playing|washed|walked|moving|has|play|climb|cook|move|plant|show|walk|work|stop)\\b/i;
-const m=rx.exec(before);if(m)target=m[0];
-}else if(/How much apples/i.test(prompt)){target='much';}
-if(target){const before=prompt.replace(/\\s*\\(Correct the (?:verb|word)\\)/i,'');const at=before.toLowerCase().indexOf(target.toLowerCase());if(at>=0){p.append(document.createTextNode(before.slice(0,at)+'('));p.append(el('strong','verb-target',before.slice(at,at+target.length)),document.createTextNode(')'+before.slice(at+target.length)));const instruction=prompt.match(/\\((Correct the (?:verb|word))\\)/i);if(instruction)p.append(document.createTextNode(' ('+instruction[1]+')'));}else p.append(document.createTextNode(prompt));}
+function makeCard(f,i){
+const c=el('section','card');if(f.context)c.append(el('div','context',f.context));
+const p=el('div','prompt');p.append(document.createTextNode((i+1)+'. '));
+const prompt=String(f.prompt||'');const marker=' (Correct the verb)';const markerAt=prompt.toLowerCase().indexOf(marker.toLowerCase());
+let target='';
+if(f.type==='correct_verb'&&markerAt>=0){
+const before=prompt.slice(0,markerAt);
+const candidates=['play','cleaned','wearing','has','climb','cook','drinking','finished','move','planting','showed','walk','walks','washed','stopped','climbed','cooked','moving','planted','worked','work'];
+const tokens=before.split(' ');
+for(const token of tokens){const clean=token.toLowerCase().replace(/[.,?!;]/g,'');if(candidates.includes(clean)){target=clean;break;}}
+}
+if(!target&&prompt.toLowerCase().includes('how much apples'))target='much';
+if(target){
+const before=prompt.slice(0,markerAt>=0?markerAt:prompt.length);const at=before.toLowerCase().indexOf(target);
+if(at>=0){p.append(document.createTextNode(before.slice(0,at)+'('));const strong=el('strong','verb-target',before.slice(at,at+target.length));p.append(strong,document.createTextNode(')'+before.slice(at+target.length)));if(markerAt>=0)p.append(document.createTextNode(prompt.slice(markerAt)));}
 else p.append(document.createTextNode(prompt));
+}else p.append(document.createTextNode(prompt));
 c.append(p);let input;
 if(f.type==='choice'){input=el('select','answer');input.id=f.id;input.append(new Option('-- Select an answer --',''));(f.options||[]).forEach(o=>input.append(new Option(o.label||o.value,o.value)));}
 else{input=el('input','answer');input.id=f.id;input.type='text';input.placeholder=f.type==='correct_verb'?'Type the corrected verb (or the full sentence)...':'Type your answer here...';}
