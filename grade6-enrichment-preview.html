@@ -156,7 +156,7 @@ const arabicHints={
 const hintWords=Object.keys(arabicHints).sort((a,b)=>b.length-a.length);
 function addArabicHints(node){
 const walker=document.createTreeWalker(node,NodeFilter.SHOW_TEXT);const texts=[];while(walker.nextNode())texts.push(walker.currentNode);
-texts.forEach(t=>{const raw=t.nodeValue;const re=new RegExp('('+hintWords.map(w=>w.replace(/[.*+?^${}()|[\]\\]/g,'\\function el(tag,cls,text){const x=document.createElement(tag);if(cls)x.className=cls;if(text!==undefined)x.textContent=text;return x;}')).join('|')+')','gi');let m,last=0;const frag=document.createDocumentFragment();let changed=false;while((m=re.exec(raw))){if(m.index>last)frag.append(document.createTextNode(raw.slice(last,m.index)));const key=m[0].toLowerCase();const span=el('span','vocab-hint',m[0]);span.title=arabicHints[key];span.setAttribute('aria-label',m[0]+' — '+arabicHints[key]);frag.append(span);last=m.index+m[0].length;changed=true;}if(changed){if(last<raw.length)frag.append(document.createTextNode(raw.slice(last)));t.parentNode.replaceChild(frag,t);}});
+texts.forEach(t=>{const raw=t.nodeValue;const re=new RegExp('('+hintWords.join('|')+')','gi');let m,last=0;const frag=document.createDocumentFragment();let changed=false;while((m=re.exec(raw))){if(m.index>last)frag.append(document.createTextNode(raw.slice(last,m.index)));const key=m[0].toLowerCase();const span=el('span','vocab-hint',m[0]);span.title=arabicHints[key];span.setAttribute('aria-label',m[0]+' — '+arabicHints[key]);frag.append(span);last=m.index+m[0].length;changed=true;}if(changed){if(last<raw.length)frag.append(document.createTextNode(raw.slice(last)));t.parentNode.replaceChild(frag,t);}});
 }
 
 function getVal(id){const x=document.getElementById(id);return x?String(x.value||'').trim():'';}
