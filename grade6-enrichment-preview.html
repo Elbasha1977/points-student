@@ -152,16 +152,21 @@ function setVal(id,v){const x=document.getElementById(id);if(x)x.value=v;}
 function makeCard(f,i){
 const c=el('section','card');if(f.context)c.append(el('div','context',f.context));
 const p=el('div','prompt');p.append(document.createTextNode((i+1)+'. '));
-const prompt=String(f.prompt||'');const markerMatch=prompt.match(/\\(Correct the verb\\)/i);let target='';
-if(markerMatch){
+const prompt=String(f.prompt||'');
+const markerMatch=prompt.match(/\\(Correct the (?:verb|word|pronoun)\\)/i);
+let target='';
+if(/How many coffee/i.test(prompt))target='many';
+else if(/How much apples/i.test(prompt))target='much';
+else if(/Can you open them/i.test(prompt))target='them';
+else if(markerMatch&&/Correct the verb/i.test(markerMatch[0])){
 const before=prompt.slice(0,markerMatch.index);
 const tokens=before.match(/[A-Za-z']+/g)||[];
 const candidates=['play','cleaned','wearing','has','climb','cook','drinking','finished','move','planting','showed','walk','walks','washed','stopped','climbed','cooked','moving','planted','worked','work','did','go','went','eat','eats','run','ran','write','wrote','take','took','make','made','see','saw','buy','bought','come','came','have','had','is','are','was','were'];
 for(let k=tokens.length-1;k>=0;k--){const word=tokens[k].toLowerCase();if(candidates.includes(word)){target=tokens[k];break;}}
 }
-if(!target&&/How much apples/i.test(prompt))target='much';
 if(target){
-const end=markerMatch?markerMatch.index:prompt.length;const before=prompt.slice(0,end);const at=before.toLowerCase().lastIndexOf(target.toLowerCase());
+const end=markerMatch?markerMatch.index:prompt.length;
+const before=prompt.slice(0,end);const at=before.toLowerCase().lastIndexOf(target.toLowerCase());
 if(at>=0){p.append(document.createTextNode(before.slice(0,at)+'('));p.append(el('strong','verb-target',before.slice(at,at+target.length)),document.createTextNode(')'+before.slice(at+target.length)));if(markerMatch)p.append(document.createTextNode(prompt.slice(end)));}
 else p.append(document.createTextNode(prompt));
 }else p.append(document.createTextNode(prompt));
