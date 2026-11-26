@@ -25,6 +25,13 @@ function capsulePerson(T,group,uniform,skin,hat){
 function makeButton(label,fn,host,cls=""){
  const b=document.createElement("button");b.type="button";b.textContent=label;b.style.cssText="border:0;border-radius:14px;padding:13px 16px;background:#0f766e;color:white;font-weight:900;font-size:15px;min-width:62px;box-shadow:0 4px 0 #115e59;touch-action:manipulation;"+cls;b.addEventListener("pointerdown",e=>{e.preventDefault();fn(true);});b.addEventListener("pointerup",()=>fn(false));b.addEventListener("pointerleave",()=>fn(false));b.addEventListener("pointercancel",()=>fn(false));host.appendChild(b);return b;
 }
+function bindKeyboard(g,keys,mapping){
+ const down=e=>{const action=mapping[e.key]||mapping[String(e.key||"").toLowerCase()];if(!action||e.repeat)return;e.preventDefault();keys[action]=true;};
+ const up=e=>{const action=mapping[e.key]||mapping[String(e.key||"").toLowerCase()];if(action){e.preventDefault();keys[action]=false;}};
+ const clear=()=>Object.values(mapping).forEach(action=>{keys[action]=false;});
+ window.addEventListener("keydown",down);window.addEventListener("keyup",up);window.addEventListener("blur",clear);
+ g.addCleanup(()=>{window.removeEventListener("keydown",down);window.removeEventListener("keyup",up);window.removeEventListener("blur",clear);clear();});
+}
 function createHost(T,opts){
  const root=document.getElementById("questionHunterContent");root.replaceChildren();
  const wrap=document.createElement("div");wrap.style.cssText="background:linear-gradient(145deg,#071b3a,#102e52);border-radius:20px;padding:12px;color:white;overflow:hidden;";
@@ -57,12 +64,15 @@ function createHost(T,opts){
  const renderer=new T.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.7));renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.outputEncoding=T.sRGBEncoding;renderer.setSize(viewport.clientWidth,viewport.clientHeight);viewport.appendChild(renderer.domElement);
  const hemi=new T.HemisphereLight(0xffffff,0x55705a,1.05);scene.add(hemi);
  const sun=new T.DirectionalLight(0xffffff,1.35);sun.position.set(-8,15,8);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);scene.add(sun);
- const clock=new T.Clock();let raf=0,ended=false,resizeObs=null;
+ const clock=new T.Clock();let resizeObs=null;
  function resize(){const w=Math.max(1,viewport.clientWidth),h=Math.max(1,viewport.clientHeight);camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h);}
  if(window.ResizeObserver){resizeObs=new ResizeObserver(resize);resizeObs.observe(viewport);}else window.addEventListener("resize",resize);
- active={scene,camera,renderer,clock,raf,viewport,controls,wrap,ended,cleanup:()=>{ended=true;cancelAnimationFrame(raf);if(resizeObs)resizeObs.disconnect();else window.removeEventListener("resize",resize);renderer.dispose();renderer.domElement.remove();}};
- const cleanup=active.cleanup;
- return {scene,camera,renderer,clock,viewport,controls,hint,score,sound,cleanup,render(fn){const tick=()=>{if(!active||active.ended)return;const dt=Math.min(clock.getDelta(),.04),t=clock.elapsedTime;fn(dt,t);renderer.render(scene,camera);active.raf=requestAnimationFrame(tick);};active.raf=requestAnimationFrame(tick);},finish(ok,message){if(!active||active.ended)return;sound(ok?"win":"miss");active.ended=true;cancelAnimationFrame(active.raf);hint.textContent=message;controls.replaceChildren();const b=document.createElement("button");b.textContent=ok?"🎉 افتح السؤال":"انتهت المحاولة";b.style.cssText="border:0;border-radius:14px;padding:15px 22px;background:"+(ok?"#16a34a":"#b91c1c")+";color:white;font-size:18px;font-weight:900;";b.onclick=()=>{const cb=ok?opts.onSuccess:opts.onMiss;this.cleanup();if(cb)cb();};controls.appendChild(b);}};
+ const handle={scene,camera,renderer,clock,raf:0,viewport,controls,wrap,ended:false,cleanup:()=>{handle.ended=true;cancelAnimationFrame(handle.raf);if(resizeObs)resizeObs.disconnect();else window.removeEventListener("resize",resize);scene.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material.dispose();}});renderer.dispose();renderer.domElement.remove();}};
+ active=handle;
+ return {scene,camera,renderer,clock,viewport,controls,hint,score,sound,cleanup:handle.cleanup,
+  addCleanup(fn){const old=handle.cleanup;handle.cleanup=()=>{try{fn();}finally{old();}};},
+  render(fn){const tick=()=>{if(active!==handle||handle.ended)return;const dt=Math.min(clock.getDelta(),.04),t=clock.elapsedTime;fn(dt,t);renderer.render(scene,camera);handle.raf=requestAnimationFrame(tick);};handle.raf=requestAnimationFrame(tick);},
+  finish(ok,message){if(active!==handle||handle.ended)return;sound(ok?"win":"miss");handle.ended=true;cancelAnimationFrame(handle.raf);hint.textContent=message;controls.replaceChildren();const b=document.createElement("button");b.textContent=ok?"🎉 افتح السؤال":"انتهت المحاولة";b.style.cssText="border:0;border-radius:14px;padding:15px 22px;background:"+(ok?"#16a34a":"#b91c1c")+";color:white;font-size:18px;font-weight:900;";b.onclick=()=>{const cb=ok?opts.onSuccess:opts.onMiss;stop(false);if(cb)cb();};controls.appendChild(b);}};
 }
 function floor(T,scene,color=0x4d9b58,w=36,d=80){const g=box(T,w,.3,d,mat(T,color),0,-.18,-24);scene.add(g);return g;}
 function tree(T,scene,x,z){const trunk=box(T,.32,1.4,.32,mat(T,0x754323),x,.65,z);const crown=sphere(T,.95,mat(T,0x23864b),x,1.9,z);scene.add(trunk,crown);}
@@ -78,8 +88,8 @@ function tap(T,opts){
  const stand=box(T,.18,3,.18,mat(T,0x64748b),0,1.5,-17);g.scene.add(stand);
  g.camera.position.set(0,7,17);g.camera.lookAt(0,2,-9);
  let done=false,shots=0;const ray=new T.Raycaster(),mouse=new T.Vector2();
- g.viewport.addEventListener("pointerdown",e=>{if(done)return;const r=g.renderer.domElement.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;ray.setFromCamera(mouse,g.camera);if(ray.intersectObject(target,true).length){g.sound("shoot");done=true;g.finish(true,"🎯 إصابة مباشرة! أحسنت التصويب.");}else{shots++;g.hint.textContent="لم تصب الهدف! حاول مرة أخرى.";if(shots>=5){done=true;g.finish(false,"انتهت المحاولات قبل إصابة الهدف.");}}});
- g.render((dt,t)=>{if(done)return;target.position.set(Math.sin(t*1.25)*5,2.5+Math.sin(t*2.2)*1.25,-12);target.rotation.z=Math.sin(t)*.25;g.score.textContent="المحاولات: "+shots+"/5";});
+ g.viewport.addEventListener("pointerdown",e=>{if(done||e.isPrimary===false||(e.pointerType==="mouse"&&e.button!==0))return;shots=1;const r=g.renderer.domElement.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;ray.setFromCamera(mouse,g.camera);if(ray.intersectObject(target,true).length){g.sound("shoot");done=true;g.finish(true,"🎯 إصابة مباشرة! أحسنت التصويب.");}else{done=true;g.sound("miss");g.score.textContent="المحاولة: 1/1";g.finish(false,"لم تصب الهدف في محاولتك الوحيدة. ضاع سؤال هذه الجولة.");}});
+ g.render((dt,t)=>{if(done)return;target.position.set(Math.sin(t*1.25)*5,2.5+Math.sin(t*2.2)*1.25,-12);target.rotation.z=Math.sin(t)*.25;g.score.textContent="المحاولة: "+(shots?1:0)+"/1";});
 }
 function rocket(T,opts){
  const g=createHost(T,{title:"🚀 قاعدة الصواريخ 3D",stats:opts.stats,hint:"اضغط على زر الإطلاق لتصيب الهدف المتحرك بالصاروخ. لديك ثلاث محاولات.",sky:0x111b3c,onSuccess:opts.onSuccess,onMiss:opts.onMiss});
@@ -96,9 +106,9 @@ function rocket(T,opts){
  const flame=sphere(T,.18,mat(T,0xf59e0b),0,0,.7);rocketMesh.add(flame);rocketMesh.visible=false;
  g.camera.position.set(0,7,20);g.camera.lookAt(0,2,-9);
  let shots=0,flight=false,progress=0,done=false;
- const fire=()=>{if(done||flight)return;g.sound("shoot");if(shots>=3){done=true;g.finish(false,"نفدت الصواريخ!");return;}shots++;flight=true;progress=0;rocketMesh.position.set(0,1.2,8);rocketMesh.visible=true;g.score.textContent="الصواريخ: "+(3-shots)+"/3";};
+ const fire=()=>{if(done||flight||shots>=1)return;g.sound("shoot");shots=1;flight=true;progress=0;rocketMesh.position.set(0,1.2,8);rocketMesh.visible=true;g.score.textContent="الصاروخ: 1/1";};
  makeButton("🚀 إطلاق الصاروخ",fire,g.controls,"background:#dc2626");
- g.render((dt,t)=>{if(done)return;target.position.set(Math.sin(t*1.35)*4,3+Math.sin(t*2)*1.1,-13);target.rotation.y+=dt*1.8;if(flight){progress+=dt*9;rocketMesh.position.z=8-progress;rocketMesh.position.x+=(target.position.x-rocketMesh.position.x)*dt*1.7;rocketMesh.position.y+=(target.position.y-rocketMesh.position.y)*dt*1.7;rocketMesh.lookAt(target.position);if(rocketMesh.position.distanceTo(target.position)<1.15){done=true;flight=false;rocketMesh.visible=false;g.finish(true,"💥 إصابة الهدف! افتح السؤال.");}else if(progress>22){flight=false;rocketMesh.visible=false;if(shots>=3){done=true;g.finish(false,"أخطأت الصواريخ الثلاثة الهدف.");}else g.hint.textContent="أخطأت الهدف. أطلق مرة أخرى!";}}});
+ g.render((dt,t)=>{if(done)return;target.position.set(Math.sin(t*1.35)*4,3+Math.sin(t*2)*1.1,-13);target.rotation.y+=dt*1.8;if(flight){progress+=dt*9;rocketMesh.position.z=8-progress;rocketMesh.position.x+=(target.position.x-rocketMesh.position.x)*dt*1.7;rocketMesh.position.y+=(target.position.y-rocketMesh.position.y)*dt*1.7;rocketMesh.lookAt(target.position);if(rocketMesh.position.distanceTo(target.position)<1.15){done=true;flight=false;rocketMesh.visible=false;g.finish(true,"💥 إصابة الهدف! افتح السؤال.");}else if(progress>22){done=true;flight=false;rocketMesh.visible=false;g.finish(false,"أخطأت الصاروخ الهدف. ضاع سؤال هذه الجولة.");}}});
 }
 function pyramids(T,opts){
  const g=createHost(T,{title:"🏺 مغامرة الأهرامات 3D",stats:opts.stats,hint:"تحرك داخل الممرات واجمع المفاتيح الذهبية الخمسة قبل الوصول إلى باب الكنز.",sky:0xf5c879,onSuccess:opts.onSuccess,onMiss:opts.onMiss});
@@ -106,7 +116,7 @@ function pyramids(T,opts){
  for(let i=0;i<7;i++){const z=-i*8-4;for(let side of [-1,1]){const wall=box(T,2.2,3.5,2.2,mat(T,0xd6a15a),side*7,1.65,z);g.scene.add(wall);}}
  for(let i=0;i<4;i++){const p=box(T,4,.5,4,mat(T,0xc58b45),i%2?3:-3,.1,-9-i*12);g.scene.add(p);}
  const hero=new T.Group();g.scene.add(hero);const hp=capsulePerson(T,hero,mat(T,0x2563eb),mat(T,0xf1c27d),mat(T,0xeab308));hero.position.set(0,0,7);
- const keys={};makeButton("◀",v=>keys.l=v,g.controls);makeButton("▶",v=>keys.r=v,g.controls);makeButton("⬆",v=>keys.f=v,g.controls);makeButton("⬇",v=>keys.b=v,g.controls);
+ const keys={};makeButton("◀",v=>keys.l=v,g.controls);makeButton("▶",v=>keys.r=v,g.controls);makeButton("⬆",v=>keys.f=v,g.controls);makeButton("⬇",v=>keys.b=v,g.controls);bindKeyboard(g,keys,{ArrowLeft:"l",a:"l",ArrowRight:"r",d:"r",ArrowUp:"f",w:"f",ArrowDown:"b",s:"b"});
  const gems=[];for(let i=0;i<5;i++){const gem=new T.Mesh(new T.OctahedronGeometry(.65),mat(T,0xffd700,.2,.6));gem.position.set((i%2?3:-3),1,-5-i*11);g.scene.add(gem);gems.push(gem);}
  const door=box(T,3.4,4,.35,mat(T,0x7c2d12),0,2,-62);g.scene.add(door);
  g.camera.position.set(0,6,14);let got=0,done=false;
@@ -116,18 +126,18 @@ function underwater(T,opts){
  const g=createHost(T,{title:"🐠 أعماق البحار 3D",stats:opts.stats,hint:"قد الغواصة واجمع اللآلئ المضيئة. ابتعد عن الصخور البحرية!",sky:0x087eaa,onSuccess:opts.onSuccess,onMiss:opts.onMiss});
  floor(T,g.scene,0x075985,38,65);
  const sub=new T.Group();g.scene.add(sub);sub.add(sphere(T,1,mat(T,0xfbbf24,.3),0,0,0));const glass=sphere(T,.52,mat(T,0x7dd3fc,.2,.4),0,.55,-.15);sub.add(glass);for(let x of [-.8,.8])sub.add(box(T,.18,.5,.18,mat(T,0xf59e0b),x,-.2,.3));sub.position.set(0,1,6);
- for(let i=0;i<15;i++){const rock=sphere(T,.7+(i%3)*.25,mat(T,0x64748b),((i%3)-1)*5,.2,-i*4-5);rock.scale.y=.7;g.scene.add(rock);}
+ const rocks=[];for(let i=0;i<15;i++){const rock=sphere(T,.7+(i%3)*.25,mat(T,0x64748b),((i%3)-1)*5,.2,-i*4-5);rock.scale.y=.7;g.scene.add(rock);rocks.push(rock);}
  const pearls=[];for(let i=0;i<6;i++){const p=sphere(T,.35,mat(T,0xffffff,.15,.55),(i%3-1)*3,1.2,-8-i*8);const glow=new T.PointLight(0x67e8f9,1.2,4);glow.position.set(0,0,0);p.add(glow);g.scene.add(p);pearls.push(p);}
- const keys={};makeButton("◀",v=>keys.l=v,g.controls);makeButton("▶",v=>keys.r=v,g.controls);makeButton("⬆",v=>keys.u=v,g.controls);makeButton("⬇",v=>keys.d=v,g.controls);
+ const keys={};makeButton("◀",v=>keys.l=v,g.controls);makeButton("▶",v=>keys.r=v,g.controls);makeButton("⬆",v=>keys.u=v,g.controls);makeButton("⬇",v=>keys.d=v,g.controls);bindKeyboard(g,keys,{ArrowLeft:"l",a:"l",ArrowRight:"r",d:"r",ArrowUp:"u",w:"u",ArrowDown:"d",s:"d"});
  let got=0,done=false;g.camera.position.set(0,5,14);
- g.render((dt,t)=>{if(done)return;sub.position.x=T.MathUtils.clamp(sub.position.x+((keys.r?1:0)-(keys.l?1:0))*dt*5,-6,6);sub.position.y=T.MathUtils.clamp(sub.position.y+((keys.u?1:0)-(keys.d?1:0))*dt*3,.5,4);sub.position.z-=dt*2.5;g.camera.position.set(sub.position.x*.4,sub.position.y+4,sub.position.z+10);g.camera.lookAt(sub.position.x,1,sub.position.z-8);pearls.forEach(p=>{p.rotation.y+=dt*2;if(p.visible&&sub.position.distanceTo(p.position)<1.5){p.visible=false;got++;g.sound("splash");g.score.textContent="اللآلئ: "+got+"/6";}});if(got===6){done=true;g.finish(true,"🐚 جمعت كل لآلئ البحر!");}if(sub.position.z<-58&&!done){done=true;g.finish(false,"انتهى الأكسجين قبل جمع اللآلئ.");}});
+ g.render((dt,t)=>{if(done)return;sub.position.x=T.MathUtils.clamp(sub.position.x+((keys.r?1:0)-(keys.l?1:0))*dt*5,-6,6);sub.position.y=T.MathUtils.clamp(sub.position.y+((keys.u?1:0)-(keys.d?1:0))*dt*3,.5,4);sub.position.z-=dt*2.5;g.camera.position.set(sub.position.x*.4,sub.position.y+4,sub.position.z+10);g.camera.lookAt(sub.position.x,1,sub.position.z-8);rocks.forEach(o=>{if(Math.abs(o.position.z-sub.position.z)<1.05&&Math.abs(o.position.x-sub.position.x)<1.25&&Math.abs(o.position.y-sub.position.y)<1.1){done=true;g.finish(false,"💥 اصطدمت الغواصة بصخرة بحرية! انتهت الجولة.");}});if(done)return;pearls.forEach(p=>{p.rotation.y+=dt*2;if(p.visible&&sub.position.distanceTo(p.position)<1.5){p.visible=false;got++;g.sound("splash");g.score.textContent="اللآلئ: "+got+"/6";}});if(got===6){done=true;g.finish(true,"🐚 جمعت كل لآلئ البحر!");}if(sub.position.z<-58&&!done){done=true;g.finish(false,"انتهى الأكسجين قبل جمع اللآلئ.");}});
 }
 function space(T,opts){
  const g=createHost(T,{title:"🚀 رائد الفضاء 3D",stats:opts.stats,hint:"تحرك بين الكواكب واجمع النجوم الذهبية وتجنب النيازك.",sky:0x090d2b,onSuccess:opts.onSuccess,onMiss:opts.onMiss});
  floor(T,g.scene,0x30304f,42,80);
  for(let i=0;i<45;i++){const star=sphere(T,.045,mat(T,0xffffff),((i*17)%30)-15,2+(i%7),-i*1.7);g.scene.add(star);}
  const astronaut=new T.Group();g.scene.add(astronaut);const ap=capsulePerson(T,astronaut,mat(T,0xe5e7eb),mat(T,0xf1c27d),mat(T,0x60a5fa));astronaut.position.set(0,0,7);
- const keys={};makeButton("◀",v=>keys.l=v,g.controls);makeButton("▶",v=>keys.r=v,g.controls);makeButton("🚀 قفز",v=>keys.jump=v,g.controls);
+ const keys={};makeButton("◀",v=>keys.l=v,g.controls);makeButton("▶",v=>keys.r=v,g.controls);makeButton("🚀 قفز",v=>keys.jump=v,g.controls);bindKeyboard(g,keys,{ArrowLeft:"l",a:"l",ArrowRight:"r",d:"r",ArrowUp:"jump",w:"jump"," ":"jump"});
  const stars=[],rocks=[];for(let i=0;i<7;i++){const a=new T.Mesh(new T.OctahedronGeometry(.55),mat(T,0xfacc15,.2,.5));a.position.set((i%3-1)*3,1.3,-5-i*9);g.scene.add(a);stars.push(a);const r=sphere(T,.8,mat(T,0x78716c),((i+1)%3-1)*3,.6,-10-i*9);rocks.push(r);g.scene.add(r);}
  let got=0,done=false,jump=0;g.camera.position.set(0,6,14);
  g.render((dt,t)=>{if(done)return;astronaut.position.x=T.MathUtils.clamp(astronaut.position.x+((keys.r?1:0)-(keys.l?1:0))*dt*6,-6,6);if(keys.jump&&jump<=0){jump=.75;g.sound("jump");keys.jump=false;}jump=Math.max(0,jump-dt);astronaut.position.y=jump>0?Math.sin((.75-jump)/.75*Math.PI)*2.1:0;astronaut.position.z-=dt*3;ap.leg1.rotation.x=Math.sin(t*12)*.35;ap.leg2.rotation.x=-ap.leg1.rotation.x;g.camera.position.set(astronaut.position.x*.3,astronaut.position.y+6,astronaut.position.z+10);g.camera.lookAt(astronaut.position.x,1,astronaut.position.z-8);stars.forEach(o=>{o.rotation.y+=dt*2;if(o.visible&&astronaut.position.distanceTo(o.position)<1.3){o.visible=false;got++;g.sound("collect");g.score.textContent="النجوم: "+got+"/7";}});rocks.forEach(o=>{if(Math.abs(o.position.z-astronaut.position.z)<1&&Math.abs(o.position.x-astronaut.position.x)<1.1&&astronaut.position.y<.7){done=true;g.finish(false,"اصطدم رائد الفضاء بأحد النيازك!");}});if(got===7){done=true;g.finish(true,"🌟 جمعت نجوم المجرة كلها!");}});
@@ -136,7 +146,7 @@ function jungle(T,opts){
  const g=createHost(T,{title:"🌴 مغامرة الغابة 3D",stats:opts.stats,hint:"اركض في الغابة، اقفز فوق جذوع الأشجار واجمع الحروف الذهبية.",sky:0x9bd7f5,onSuccess:opts.onSuccess,onMiss:opts.onMiss});
  floor(T,g.scene,0x287a3d,32,100);for(let side of [-1,1])for(let i=0;i<16;i++)tree(T,g.scene,side*(7+(i%3)), -i*6);
  const runner=new T.Group();g.scene.add(runner);const rp=capsulePerson(T,runner,mat(T,0xf97316),mat(T,0xf1c27d),mat(T,0x7c2d12));runner.position.set(0,0,7);
- const keys={};makeButton("◀",v=>keys.l=v,g.controls);makeButton("▶",v=>keys.r=v,g.controls);makeButton("⬆ اقفز",v=>keys.jump=v,g.controls);
+ const keys={};makeButton("◀",v=>keys.l=v,g.controls);makeButton("▶",v=>keys.r=v,g.controls);makeButton("⬆ اقفز",v=>keys.jump=v,g.controls);bindKeyboard(g,keys,{ArrowLeft:"l",a:"l",ArrowRight:"r",d:"r",ArrowUp:"jump",w:"jump"," ":"jump"});
  const logs=[],letters=[];for(let i=0;i<9;i++){const z=-9-i*8;const log=box(T,1.5,.8,1.1,mat(T,0x854d0e),(i%3-1)*3,.35,z);g.scene.add(log);logs.push(log);const letter=sphere(T,.38,mat(T,0xfacc15),(i%3-1)*3,1.6,z-2);g.scene.add(letter);letters.push(letter);}
  let got=0,jump=0,done=false;g.camera.position.set(0,6,14);
  g.render((dt,t)=>{if(done)return;runner.position.x=T.MathUtils.clamp(runner.position.x+((keys.r?1:0)-(keys.l?1:0))*dt*6,-5,5);if(keys.jump&&jump<=0){jump=.7;g.sound("jump");keys.jump=false;}jump=Math.max(0,jump-dt);runner.position.y=jump>0?Math.sin((.7-jump)/.7*Math.PI)*2:0;runner.position.z-=dt*4;rp.leg1.rotation.x=Math.sin(t*14)*.65;rp.leg2.rotation.x=-rp.leg1.rotation.x;g.camera.position.set(runner.position.x*.3,runner.position.y+5,runner.position.z+10);g.camera.lookAt(runner.position.x,1,runner.position.z-8);logs.forEach(o=>{if(Math.abs(o.position.z-runner.position.z)<1.1&&Math.abs(o.position.x-runner.position.x)<1.2&&runner.position.y<.65){done=true;g.finish(false,"اصطدمت بجذع شجرة!");}});letters.forEach(o=>{if(o.visible&&runner.position.distanceTo(o.position)<1.4){o.visible=false;got++;g.sound("collect");g.score.textContent="الحروف: "+got+"/9";}});if(got===9){done=true;g.finish(true,"🌟 أكملت مغامرة الغابة!");}});
@@ -146,7 +156,7 @@ function courier(T,opts){
  floor(T,g.scene,0x3f8c4d,42,100);const road=box(T,13,.15,100,mat(T,0x343a40),0,0,-35);g.scene.add(road);
  for(let x of [-8,8])for(let z=8;z>-90;z-=10){const building=box(T,4,4+(z%3),4,mat(T,0x64748b),x,2,z);g.scene.add(building);}
  const van=new T.Group();g.scene.add(van);van.add(box(T,1.8,.8,3,mat(T,0xfacc15),0,.75,0),box(T,1.5,.65,1.2,mat(T,0xfde68a),0,1.45,-.35));for(let x of [-.9,.9])for(let z of [-.9,.9]){const w=sphere(T,.32,mat(T,0x111827),x,.35,z);w.scale.set(1,.7,1);van.add(w);}van.position.set(0,0,7);
- const keys={};makeButton("⬅️",v=>keys.l=v,g.controls);makeButton("➡️",v=>keys.r=v,g.controls);
+ const keys={};makeButton("⬅️",v=>keys.l=v,g.controls);makeButton("➡️",v=>keys.r=v,g.controls);bindKeyboard(g,keys,{ArrowLeft:"l",a:"l",ArrowRight:"r",d:"r"});
  const parcels=[];for(let i=0;i<6;i++){const p=box(T,.8,.8,.8,mat(T,0xf59e0b),(i%3-1)*3,.6,-8-i*12);g.scene.add(p);parcels.push(p);}
  const obstacles=[];for(let i=0;i<6;i++){const o=box(T,1.5,.8,1.5,mat(T,0xef4444),(i%3-1)*3,.4,-14-i*12);g.scene.add(o);obstacles.push(o);}
  let got=0,done=false,dist=0;g.camera.position.set(0,6,15);
@@ -159,7 +169,7 @@ function castle(T,opts){
  const archer=new T.Group();g.scene.add(archer);capsulePerson(T,archer,mat(T,0x7c3aed),mat(T,0xf1c27d),mat(T,0x78350f));archer.position.set(0,0,7);
  const targets=[];for(let i=0;i<3;i++){const tg=new T.Group();const d=new T.Mesh(new T.CylinderGeometry(.95,.95,.18,32),mat(T,0xdc2626));d.rotation.x=Math.PI/2;tg.add(d);const bull=sphere(T,.3,mat(T,0xfacc15),0,0,.15);tg.add(bull);tg.position.set((i-1)*5,3+i*.7,-13);g.scene.add(tg);targets.push(tg);}
  const ray=new T.Raycaster(),mouse=new T.Vector2();let hits=0,shots=0,done=false;
- g.viewport.addEventListener("pointerdown",e=>{if(done)return;shots++;const r=g.renderer.domElement.getBoundingClientRect();mouse.x=(e.clientX-r.left)/r.width*2-1;mouse.y=-(e.clientY-r.top)/r.height*2+1;ray.setFromCamera(mouse,g.camera);let hit=false;targets.forEach(tg=>{if(tg.visible&&ray.intersectObject(tg,true).length){tg.visible=false;hits++;hit=true;g.sound("shoot");}});if(!hit)g.sound("miss");g.score.textContent="الأهداف: "+hits+"/3 | المحاولات: "+shots+"/5";if(hits===3){done=true;g.finish(true,"🏹 أصبت أهداف القلعة الثلاثة!");}else if(shots>=5){done=true;g.finish(false,"لم تصب جميع الأهداف في المحاولات المتاحة.");}});
+ g.viewport.addEventListener("pointerdown",e=>{if(done||e.isPrimary===false||(e.pointerType==="mouse"&&e.button!==0))return;shots=1;const r=g.renderer.domElement.getBoundingClientRect();mouse.x=(e.clientX-r.left)/r.width*2-1;mouse.y=-(e.clientY-r.top)/r.height*2+1;ray.setFromCamera(mouse,g.camera);let hit=false;targets.forEach(tg=>{if(!hit&&tg.visible&&ray.intersectObject(tg,true).length){tg.visible=false;hits++;hit=true;g.sound("shoot");}});g.score.textContent="الأهداف المصابة: "+hits+"/1 | المحاولات: 1/1";done=true;if(hit)g.finish(true,"🏹 أصبت الهدف المتحرك! افتح السؤال.");else{g.sound("miss");g.finish(false,"أخطأت الهدف في محاولتك الوحيدة. ضاع سؤال هذه الجولة.");}});
  g.camera.position.set(0,7,20);g.camera.lookAt(0,2,-10);
  g.render((dt,t)=>{targets.forEach((o,i)=>{o.position.x=(i-1)*5+Math.sin(t*1.5+i)*1.6;o.position.y=3+i*.7+Math.sin(t*2+i)*.5;o.rotation.y+=dt;});});
 }
@@ -174,10 +184,7 @@ function treasure(T,opts){
  g.camera.position.set(0,5,11);g.camera.lookAt(0,1,-8);
  const move=(k,v)=>keys[k]=v;
  makeButton("◀",v=>move("left",v),g.controls);makeButton("▲",v=>move("up",v),g.controls);makeButton("▼",v=>move("down",v),g.controls);makeButton("▶",v=>move("right",v),g.controls);
- window.addEventListener("keydown",keyDown);window.addEventListener("keyup",keyUp);
- function keyDown(e){if(["ArrowLeft","a","A"].includes(e.key))move("left",true);if(["ArrowRight","d","D"].includes(e.key))move("right",true);if(["ArrowUp","w","W"].includes(e.key))move("up",true);if(["ArrowDown","s","S"].includes(e.key))move("down",true);}
- function keyUp(e){if(["ArrowLeft","a","A"].includes(e.key))move("left",false);if(["ArrowRight","d","D"].includes(e.key))move("right",false);if(["ArrowUp","w","W"].includes(e.key))move("up",false);if(["ArrowDown","s","S"].includes(e.key))move("down",false);}
- const oldCleanup=g.cleanup;g.cleanup=()=>{window.removeEventListener("keydown",keyDown);window.removeEventListener("keyup",keyUp);oldCleanup();};
+ bindKeyboard(g,keys,{ArrowLeft:"left",a:"left",ArrowRight:"right",d:"right",ArrowUp:"up",w:"up",ArrowDown:"down",s:"down"});
  g.render((dt,t)=>{if(finished)return;const dx=(keys.right?1:0)-(keys.left?1:0),dz=(keys.down?1:0)-(keys.up?1:0);explorer.position.x=Math.max(-5,Math.min(5,explorer.position.x+dx*dt*5));explorer.position.z=Math.max(-52,Math.min(8,explorer.position.z+dz*dt*5));p.leg1.rotation.x=Math.sin(t*12)*Math.min(1,Math.abs(dx)+Math.abs(dz))*.7;p.leg2.rotation.x=-p.leg1.rotation.x;g.camera.position.x+=(explorer.position.x*.6-g.camera.position.x)*dt*2;g.camera.position.z+=(explorer.position.z+7-g.camera.position.z)*dt*2;g.camera.lookAt(explorer.position.x,1,explorer.position.z-8);chests.forEach((c,i)=>{c.rotation.y=Math.sin(t*1.5+i)*.18;if(!c.userData.taken&&explorer.position.distanceTo(c.position)<1.65){c.userData.taken=true;c.visible=false;collected++;g.sound("collect");g.score.textContent="الكنوز: "+collected+"/5";if(collected===5){finished=true;g.finish(true,"🏆 جمعت كل الكنوز!");}}});});
 }
 function race(T,opts){
@@ -200,7 +207,7 @@ function blocks(T,opts){
  const avatar=new T.Group();g.scene.add(avatar);capsulePerson(T,avatar,mat(T,0x7c3aed),mat(T,0xf1c27d),mat(T,0xfde047));avatar.position.set(-2.5,0,5);
  const cubes=[];for(let i=0;i<5;i++){const c=box(T,.9,.9,.9,mat(T,0xfacc15,.25,.35),(i%2?2.5:-2.5),.8,-5-i*10);c.rotation.set(.3,.4,.2);g.scene.add(c);cubes.push(c);}
  const keys={};const bind=(k,v)=>keys[k]=v;makeButton("◀",v=>bind("l",v),g.controls);makeButton("▲",v=>bind("u",v),g.controls);makeButton("▼",v=>bind("d",v),g.controls);makeButton("▶",v=>bind("r",v),g.controls);
- let got=0,done=false;const kd=e=>{if(e.key==="ArrowLeft")bind("l",true);if(e.key==="ArrowRight")bind("r",true);if(e.key==="ArrowUp")bind("u",true);if(e.key==="ArrowDown")bind("d",true);},ku=e=>{if(e.key==="ArrowLeft")bind("l",false);if(e.key==="ArrowRight")bind("r",false);if(e.key==="ArrowUp")bind("u",false);if(e.key==="ArrowDown")bind("d",false);};window.addEventListener("keydown",kd);window.addEventListener("keyup",ku);const old=g.cleanup;g.cleanup=()=>{window.removeEventListener("keydown",kd);window.removeEventListener("keyup",ku);old();};
+ let got=0,done=false;bindKeyboard(g,keys,{ArrowLeft:"l",a:"l",ArrowRight:"r",d:"r",ArrowUp:"u",w:"u",ArrowDown:"d",s:"d"});
  g.camera.position.set(0,7,12);g.render((dt,t)=>{if(done)return;avatar.position.x=Math.max(-5,Math.min(5,avatar.position.x+((keys.r?1:0)-(keys.l?1:0))*dt*5));avatar.position.z=Math.max(-49,Math.min(8,avatar.position.z+((keys.d?1:0)-(keys.u?1:0))*dt*5));g.camera.position.x+=(avatar.position.x-g.camera.position.x)*dt*2;g.camera.position.z+=(avatar.position.z+9-g.camera.position.z)*dt*2;g.camera.lookAt(avatar.position.x,0,avatar.position.z-7);cubes.forEach(c=>{c.rotation.x+=dt;c.rotation.y+=dt*1.4;if(!c.userData.got&&avatar.position.distanceTo(c.position)<1.5){c.userData.got=true;c.visible=false;got++;g.sound("collect");g.score.textContent="المكعبات: "+got+"/5";if(got===5){done=true;g.finish(true,"✨ اكتمل بناء المكعبات!");}}});});
 }
 function football(T,opts){
@@ -227,9 +234,9 @@ function football(T,opts){
   const dirs=[[0,1,0],[.85,.32,0],[-.85,.32,0],[0,.32,.85],[0,.32,-.85],[.55,-.55,.55],[-.55,-.55,.55],[.55,-.55,-.55],[-.55,-.55,-.55]];
   dirs.forEach(d=>{const n=new T.Vector3(...d).normalize(),v=n.clone().multiplyScalar(ballRadius*.985),p=sphere(T,.105,panelMat,v.x,v.y,v.z);p.scale.set(1,.9,.18);p.quaternion.setFromUnitVectors(new T.Vector3(0,0,1),n);ball.add(p);});
   ball.position.set(0,.5,3.8);g.camera.position.set(0,7.2,20);g.camera.lookAt(0,1.8,-7);
-  let direction=0,shot=false,elapsed=0,finished=false,netTime=0,finishDelay=0;
+  let direction=0,keeperGuess=0,shot=false,elapsed=0,finished=false,netTime=0,finishDelay=0;
   [{label:"⬅️ الزاوية اليسرى",v:-1},{label:"🎯 الوسط",v:0},{label:"➡️ الزاوية اليمنى",v:1}].forEach(c=>makeButton(c.label,()=>{if(!shot){direction=c.v;g.hint.textContent="تم اختيار "+c.label+" — اضغط سدد الكرة";}},g.controls));
-  makeButton("⚽ سدد الكرة",()=>{if(shot||finished)return;g.sound("shoot");shot=true;g.controls.querySelectorAll("button").forEach(b=>{b.disabled=true;b.style.opacity=".5";});g.hint.textContent="🏃 اللاعب يركل الكرة... والحارس يتحرك للتصدي!";},g.controls,"background:#dc2626");
+  makeButton("⚽ سدد الكرة",()=>{if(shot||finished)return;g.sound("shoot");keeperGuess=[-1,0,1][Math.floor(Math.random()*3)];shot=true;g.controls.querySelectorAll("button").forEach(b=>{b.disabled=true;b.style.opacity=".5";});g.hint.textContent="🏃 اللاعب يركل الكرة... والحارس يتحرك للتصدي!";},g.controls,"background:#dc2626");
   g.render((dt,t)=>{
     if(finished)return;
     if(netTime>0){netTime+=dt;const strength=Math.max(0,1-netTime/1.05);netBars.forEach(b=>{b.mesh.position.z=b.base+Math.sin(netTime*34+b.phase)*.42*strength;});finishDelay+=dt;if(finishDelay>=1.05){finished=true;g.finish(true,"⚽ جوووول! اهتزت الشباك بعد دخول الكرة!");}return;}
@@ -237,10 +244,10 @@ function football(T,opts){
     elapsed+=dt;const p=Math.min(1,elapsed/1.42),ease=p*p*(3-2*p);
     ball.position.x=direction*3.65*ease;ball.position.y=.5+Math.sin(p*Math.PI)*3.05;ball.position.z=3.8-21.1*ease;
     ball.rotation.x-=dt*12;ball.rotation.z+=dt*9;
-    const patrol=Math.sin(t*1.75)*2.25,dive=direction*3.35,diveBlend=Math.max(0,Math.min(1,(p-.22)*2.2));
+    const patrol=Math.sin(t*1.75)*2.25,dive=keeperGuess*3.35,diveBlend=Math.max(0,Math.min(1,(p-.22)*2.2));
     keeper.position.x=patrol*(1-diveBlend)+dive*diveBlend;
-    keeper.rotation.z+=(direction===0?Math.sin(t*5)*.08:-direction*.78-keeper.rotation.z)*Math.min(1,dt*5);
-    kp.arm1.rotation.z=-direction*.9;kp.arm2.rotation.z=-direction*.9;kp.leg1.rotation.z=direction*.22;kp.leg2.rotation.z=direction*.22;
+    keeper.rotation.z+=(keeperGuess===0?Math.sin(t*5)*.08:-keeperGuess*.78-keeper.rotation.z)*Math.min(1,dt*5);
+    kp.arm1.rotation.z=-keeperGuess*.9;kp.arm2.rotation.z=-keeperGuess*.9;kp.leg1.rotation.z=keeperGuess*.22;kp.leg2.rotation.z=keeperGuess*.22;
     if(p>=1){const saved=Math.abs(keeper.position.x-ball.position.x)<1.18&&ball.position.y<3.65;if(saved){finished=true;g.finish(false,"🧤 تصدى الحارس للكرة! ضاعت ركلة الجزاء.");}else{netTime=.001;finishDelay=0;g.hint.textContent="🥅 هدف! الكرة اصطدمت بالشباك...";ball.position.z=-16.35;}}
   });
 }
@@ -257,6 +264,20 @@ function thief(T,opts){
  makeButton("⬅️ يسار",()=>lane=Math.max(-1,lane-1),g.controls);makeButton("⚡ اندفاع",v=>sprint=v,g.controls);makeButton("يمين ➡️",()=>lane=Math.min(1,lane+1),g.controls);
  g.render((dt,t)=>{if(done)return;const speed=sprint?13:8;progress+=dt*speed;cop.position.x+=(lane*3-cop.position.x)*dt*5;cop.position.z=6-progress;robber.position.z=-4-progress*.75;robber.position.x=Math.sin(t*1.1)*1.7;cp.leg1.rotation.x=Math.sin(t*14)*.65;cp.leg2.rotation.x=-cp.leg1.rotation.x;g.camera.position.x+=(cop.position.x*.3-g.camera.position.x)*dt*3;g.camera.position.z=cop.position.z+10;g.camera.lookAt(cop.position.x,1,cop.position.z-9);cars.forEach(c=>{if(!c.userData.hit&&Math.abs(c.position.z-cop.position.z)<1.4&&Math.abs(c.position.x-cop.position.x)<1.5){c.userData.hit=true;collisions++;g.sound("hit");progress=Math.max(0,progress-4);g.hint.textContent="🚗 عائق في الطريق! اصطدامات: "+collisions+"/3";if(collisions>=3){done=true;g.finish(false,"هرب اللص بعد أن تعطلت المطاردة!");}}});g.score.textContent="مسافة المطاردة: "+Math.round(progress)+" م";if(progress>=48&&!done){done=true;g.finish(true,"🚓 أمسكت باللص! أحسنت أيها الشرطي!");}});
 }
+function maze(T,opts){
+ const g=createHost(T,{title:"🧭 متاهة الأبطال 3D",stats:opts.stats,hint:"اجمع المفاتيح الذهبية الثلاثة داخل المتاهة، ثم افتح بوابة الخروج. استخدم الأسهم أو WASD.",sky:0x9ac7e8,onSuccess:opts.onSuccess,onMiss:opts.onMiss});
+ const layout=["#########","#P..#..K#","#.#.#.#.#","#.#...#K#","#.###.#.#","#K....E.#","#########"],spacing=2.5,wallMat=mat(T,0x475569);floor(T,g.scene,0x365b47,24,20);
+ const keysList=[],start={r:1,c:1},exit={r:5,c:6},pos=(r,c)=>({x:(c-4)*spacing,z:(r-3)*spacing});
+ layout.forEach((row,r)=>[...row].forEach((cell,c)=>{const p=pos(r,c);if(cell==="#")g.scene.add(box(T,spacing*.96,2.5,spacing*.96,wallMat,p.x,1.25,p.z));if(cell==="K"){const key=new T.Mesh(new T.OctahedronGeometry(.62),mat(T,0xfacc15,.2,.55));key.position.set(p.x,1.05,p.z);key.add(new T.PointLight(0xfbbf24,1.4,4));g.scene.add(key);keysList.push({r,c,mesh:key,got:false});}if(cell==="E"){const gm=mat(T,0x22c55e,.3,.25);g.scene.add(box(T,.22,2.4,.22,gm,p.x-1,1.2,p.z),box(T,.22,2.4,.22,gm,p.x+1,1.2,p.z),box(T,2.2,.22,.22,gm,p.x,2.3,p.z));}}));
+ const hero=new T.Group();g.scene.add(hero);const hp=capsulePerson(T,hero,mat(T,0x2563eb),mat(T,0xf1c27d),mat(T,0xfacc15)),first=pos(start.r,start.c);hero.position.set(first.x,0,first.z);
+ const keys={};makeButton("◀",v=>keys.l=v,g.controls);makeButton("▲",v=>keys.u=v,g.controls);makeButton("▼",v=>keys.d=v,g.controls);makeButton("▶",v=>keys.r=v,g.controls);bindKeyboard(g,keys,{ArrowLeft:"l",a:"l",ArrowRight:"r",d:"r",ArrowUp:"u",w:"u",ArrowDown:"d",s:"d"});
+ let row=start.r,col=start.c,got=0,done=false,stepWait=0;g.camera.position.set(first.x,10,first.z+12);g.camera.lookAt(first.x,0,first.z);
+ g.render((dt,t)=>{if(done)return;stepWait=Math.max(0,stepWait-dt);if(stepWait<=0){let nr=row,nc=col;if(keys.l)nc--;else if(keys.r)nc++;else if(keys.u)nr--;else if(keys.d)nr++;if(nr!==row||nc!==col){stepWait=.16;if(layout[nr]?.[nc]&&layout[nr][nc]!=="#"){row=nr;col=nc;const p=pos(row,col);hero.position.x=p.x;hero.position.z=p.z;}else g.sound("hit");}}
+  hp.leg1.rotation.x=Math.sin(t*9)*.18;hp.leg2.rotation.x=-hp.leg1.rotation.x;g.camera.position.x+=(hero.position.x-g.camera.position.x)*dt*3;g.camera.position.z+=(hero.position.z+11-g.camera.position.z)*dt*3;g.camera.lookAt(hero.position.x,0,hero.position.z);
+  keysList.forEach(k=>{k.mesh.rotation.y+=dt*2;k.mesh.position.y=1.05+Math.sin(t*3+k.r)*.12;if(!k.got&&row===k.r&&col===k.c){k.got=true;k.mesh.visible=false;got++;g.sound("collect");g.score.textContent="المفاتيح: "+got+"/3";}});
+  if(row===exit.r&&col===exit.c){if(got===3){done=true;g.finish(true,"🔓 جمعت المفاتيح الثلاثة وخرجت من المتاهة!");}else g.hint.textContent="🚪 البوابة مغلقة. اجمع المفاتيح المتبقية أولًا ("+got+"/3).";}
+ });
+}
 function stop(exit){if(!active)return;const a=active;active=null;a.cleanup();if(exit){const cb=window.__questionHunter3DExit;if(cb)cb();}}
-window.QuestionHunter3D={stop(){stop(false);},async start(opts){stop(false);try{const T=await loadThree();const state=window.__questionHunterState;if(!state)throw Error("تعذر العثور على جلسة اللعبة.");const stats="الجولة "+(Number(opts.session.questionIndex||0)+1)+" / "+Number(opts.session.questionCount||5)+" | النقاط "+Number(opts.session.score||0);const o={...opts,stats};({tap,rocket,pyramids,underwater,space,jungle,courier,castle,treasure,race,blocks,football,thief}[opts.mode]||treasure)(T,o);}catch(e){console.error("3D game failed",e);const host=document.getElementById("questionHunterContent");host.replaceChildren();const p=document.createElement("p");p.textContent=e.message||"تعذر تشغيل اللعبة ثلاثية الأبعاد.";p.style.cssText="padding:20px;color:#991b1b;text-align:center;font-weight:bold;";host.appendChild(p);const b=document.createElement("button");b.textContent="العودة لاختيار اللعبة";b.className="action-btn primary";b.onclick=()=>{if(window.__questionHunter3DExit)window.__questionHunter3DExit();};host.appendChild(b);}}};
+window.QuestionHunter3D={stop(){stop(false);},async start(opts){stop(false);try{const T=await loadThree();const state=window.__questionHunterState;if(!state)throw Error("تعذر العثور على جلسة اللعبة.");const stats="الجولة "+(Number(opts.session.questionIndex||0)+1)+" / "+Number(opts.session.questionCount||5)+" | النقاط "+Number(opts.session.score||0);const o={...opts,stats};({tap,rocket,pyramids,underwater,space,jungle,courier,castle,treasure,race,blocks,football,thief,maze}[opts.mode]||treasure)(T,o);}catch(e){console.error("3D game failed",e);const host=document.getElementById("questionHunterContent");host.replaceChildren();const p=document.createElement("p");p.textContent=e.message||"تعذر تشغيل اللعبة ثلاثية الأبعاد.";p.style.cssText="padding:20px;color:#991b1b;text-align:center;font-weight:bold;";host.appendChild(p);const b=document.createElement("button");b.textContent="العودة لاختيار اللعبة";b.className="action-btn primary";b.onclick=()=>{if(window.__questionHunter3DExit)window.__questionHunter3DExit();};host.appendChild(b);}}};
 })();
