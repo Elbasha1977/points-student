@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Grade 6 English Enrichment Worksheet — Preview</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f1f5f9;color:#172033;font-family:Arial,sans-serif;line-height:1.55}.wrap{max-width:1050px;margin:24px auto;padding:16px}.hero{background:linear-gradient(120deg,#1e3a8a,#2563eb);color:white;padding:24px;border-radius:18px;margin-bottom:18px}.hero h1{margin:0 0 8px;font-size:clamp(22px,4vw,32px)}.meta{display:flex;gap:10px;flex-wrap:wrap}.pill{background:#ffffff22;border:1px solid #ffffff55;border-radius:99px;padding:6px 12px}.section{margin:22px 0 10px;padding:12px 16px;border-radius:12px;background:#dbeafe;color:#1e3a8a;font-size:18px;font-weight:800}.card,.task{background:white;border:1px solid #cbd5e1;border-radius:14px;padding:16px;margin:10px 0;box-shadow:0 2px 8px #0f172a0b}.prompt{font-weight:700;margin-bottom:10px}.context{background:#eff6ff;padding:12px;border-radius:9px;margin:8px 0 12px;color:#1e3a8a;white-space:pre-line}.answer,select{width:100%;padding:12px;border:2px solid #bfdbfe;border-radius:9px;font-size:16px;background:#f8fafc}.task h3{margin:0 0 12px;color:#1e3a8a}.bank{display:flex;flex-wrap:wrap;gap:8px;padding:12px;background:#eff6ff;border-radius:10px;margin:10px 0}.chip,.sentence{border:1px solid #93c5fd;background:#dbeafe;color:#1e3a8a;border-radius:9px;padding:10px 13px;font-weight:700;cursor:grab}.chip:disabled{opacity:.35;cursor:not-allowed}.fillrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-bottom:1px solid #e2e8f0;padding:10px 0}.fillrow .q{flex:1 1 260px}.drop{min-width:145px;min-height:42px;border:2px dashed #60a5fa;border-radius:9px;background:#f8fbff;padding:8px;color:#64748b}.matchgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;position:relative}.matchcol{display:flex;flex-direction:column;gap:12px}.matchitem{padding:12px;border:2px solid #bfdbfe;background:#eff6ff;border-radius:10px;text-align:left;direction:ltr;min-height:54px;cursor:pointer;position:relative;z-index:2}.matchitem.answeritem{border-color:#bbf7d0;background:#f0fdf4}.matchitem.selected{outline:3px solid #2563eb}.matchitem.used{opacity:.65}.matchwrap{position:relative}.matchlines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}.slots{display:flex;flex-wrap:wrap;gap:9px}.slot{flex:1 1 230px;min-height:58px;border:2px dashed #93c5fd;border-radius:10px;padding:10px;display:flex;gap:8px;align-items:center;background:#f8fbff}.slot .droptext{direction:ltr;text-align:left}.sentence{background:#eff6ff;color:#172554;text-align:left;direction:ltr;line-height:1.45}.sentence.used{opacity:.45}.actions{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0}.btn{border:0;border-radius:10px;padding:13px 18px;font-size:16px;font-weight:800;cursor:pointer;background:#1d4ed8;color:white}.btn.secondary{background:#475569}.result{display:none;background:#ecfdf5;border:2px solid #86efac;padding:18px;border-radius:14px;margin:20px 0}.result strong{font-size:26px;color:#047857}.small{color:#64748b;font-size:13px}@media(max-width:600px){.matchgrid{gap:10px}.matchitem{font-size:13px;padding:9px}.slot{flex-basis:100%}.wrap{padding:10px}}
+</style></head><body><main class="wrap">
+<header class="hero"><h1>Grade 6 English Enrichment Worksheet</h1><p>End of First Semester · Interactive Preview</p><div class="meta"><span class="pill">128 Questions</span><span class="pill">500 Points</span><span class="pill">Standalone Preview — No Login Required</span></div></header>
+<div class="card"><b>How to use this preview</b><p>Try matching by connecting two columns, drag words into the gaps, choose answers, correct verbs, answer reading questions, and arrange the writing sentences. Your answers are checked on this page only. This preview does not send points to the school system.</p></div>
+<div id="worksheet"></div><div class="actions"><button class="btn" id="check">Submit and Check Answers</button><button class="btn secondary" id="reset">Reset Worksheet</button></div><div class="result" id="result"></div>
+</main>
+<script>
+(function(){
+  function build(){
+    var fields=[], answerKey={}, n=0;
+    function add(section,prompt,answer,options,context){
+      var id='g6e_'+(++n), f={id:id,section:section,prompt:prompt,points:1,type:options?'choice':'short_text'};
+      if(options)f.options=options;if(context)f.context=context;fields.push(f);
+      if(answer!==null&&answer!==undefined&&String(answer).trim())answerKey[id]=String(answer);
+    }
+    function text(s,q,a,c){add(s,q,a,null,c);if(/\(Correct the verb\)/i.test(q))fields[fields.length-1].type='correct_verb';}
+    function choice(s,q,a,o,c){add(s,q,a,o,c);}
+    function words(a){return a.map(function(x){return {value:x,label:x};});}
+    function fillBlank(s,q,answer,bank,ctx,group){var id='g6e_'+(++n);fields.push({id:id,section:s,prompt:q,points:1,type:'fill_blank',wordBank:bank,fillGroup:group,context:ctx||''});answerKey[id]=String(answer);}
+    function mcq(a,b,c,d){return [{value:'A',label:'A. '+a},{value:'B',label:'B. '+b},{value:'C',label:'C. '+c},{value:'D',label:'D. '+d}];}
+    function match(s,qs,opts,ans,ctx){var group='match_'+(++n);qs.forEach(function(q,i){var id='g6e_'+(++n);fields.push({id:id,section:s,prompt:q,points:1,type:'line_match',matchGroup:group,matchOptions:opts});answerKey[id]=String(ans[i]);});}
+    var m1=[{value:'a',label:'a. We must be quiet.'},{value:'b',label:"b. I've got a toothache."},{value:'c',label:'c. You should go to the dentist.'},{value:'d',label:'d. Yes, I could.'},{value:'e',label:'e. Yes, I do.'}];
+    var m2=[{value:'a',label:'a. Yes, I did.'},{value:'b',label:'b. Yes, he should.'},{value:'c',label:'c. Three apples.'},{value:'d',label:'d. I was tall and slim.'},{value:'e',label:'e. OK. I like shopping.'}];
+    var m3=[{value:'a',label:"a. I've got a headache."},{value:'b',label:'b. basketball'},{value:'c',label:"c. No, I couldn't."},{value:'d',label:'d. Yes, I do.'},{value:'e',label:'e. We must read.'}];
+    var m4=[{value:'a',label:'a. Sure. I like swimming.'},{value:'b',label:"b. No, I didn't."},{value:'c',label:'c. Two books.'},{value:'d',label:'d. Yes, he should.'},{value:'e',label:'e. I was short and slim.'}];
+    var m5=[{value:'a',label:"a. I've got a cold."},{value:'b',label:'b. You should go to the doctor.'},{value:'c',label:"c. No, I couldn't."},{value:'d',label:'d. Yes, I do.'},{value:'e',label:'e. We must keep it clean.'}];
+    var m6=[{value:'a',label:'a. Yes. I like old things.'},{value:'b',label:'b. Yes, I did.'},{value:'c',label:'c. Five pens.'},{value:'d',label:'d. Yes, you should.'},{value:'e',label:'e. I was tall.'}];
+    match('Unit 1 — Language Function (1) — Match 1',["1. What's the matter, Ali?","2. What must we do in the class?","3. Could you read when you were two?","4. Do you have to do your homework?","5. I have a toothache. What should I do?"],m1,['b','a','d','e','c']);
+    match('Unit 1 — Language Function (1) — Match 2',['1. Should he stay in bed?','2. How many apples do you want?','3. Did you have to clean the room?','4. Would you like to go to the mall?','5. What did you look like in grade 1?'],m2,['b','c','a','e','d']);
+    var r1='My name is Ali. I want to tell you about my last camping trip. Last week, I went with my mom, dad and brother. I took my raincoat because it was raining. We arrived and set the tent. When the rain stopped, we saw a rainbow. We were excited. The next morning, my mom and dad walked near the river. My brother and I went fishing, went cycling, and played tennis. At night, we were hungry. So, my dad started the fire and roasted the fish and meat. The dinner was delicious. Later, we slept outside the tent because it was small. It was fun to sleep under the stars. The next day, we went home. We really enjoyed the nice trip.';
+    choice('Unit 1 — Reading (1)','1. What is the text MAINLY about?','D',mcq('A fishing trip','A school trip','A science trip','A camping trip'),r1);
+    choice('Unit 1 — Reading (1)',"2. What does the underlined word 'enjoyed' mean?",'A',mcq('loved','called','helped','opened'),r1);
+    text('Unit 1 — Reading (1)','3. What did they see after the rain stopped?','a rainbow||rainbow||they saw a rainbow',r1);
+    text('Unit 1 — Reading (1)','4. What did Mom and Dad do the next morning?','walked near the river||they walked near the river',r1);
+    text('Unit 1 — Reading (1)','5. Why did the family sleep outside the tent?','because it was small||the tent was small||because their tent was small',r1);
+    var vb1=['sour','skiing','horse','headache','park','password'];
+    ["1. We drank some ______ lemon juice, but I didn't like it.","2. I go ______ when there's snow.",'3. This is a ______. I can ride it.',"4. I've got a ______. My head hurts a lot.","5. Don't ______ the car in this place. It is a bus stop!","6. What's the ______ for the Wi-Fi?"].forEach(function(q,i){fillBlank('Unit 1 — Vocabulary (1) — Fill in the gaps',q,vb1[i],words(['park','headache','horse','skiing','password','sour']),'Choose a suitable word from the word box.','fill_1');});
+    choice('Unit 1 — Vocabulary (1)','7. He was tall and ______ when he was five.','B',mcq('sad','slim','dark','long'));
+    choice('Unit 1 — Vocabulary (1)','8. My grandfather needs ______ to read.','C',mcq('cups','cars','glasses','helmets'));
+    choice('Unit 1 — Vocabulary (1)','9. I bought this ______ to study and do projects.','C',mcq('car','bike','laptop','school'));
+    [
+      ['1. You must ______ quietly in the library.','A',['speak','speaks','to speak','speaking']],
+      ['2. Children should ______ early every day.','A',['sleep','sleeps','to sleep','sleeping']],
+      ['3. My dad ______ the car yesterday.','C',['wash','washes','washed','washing']],
+      ["4. We didn't ______ to write an email yesterday.",'C',['has','had','have','having']],
+      ['5. How ______ books do you read every week?','D',['tall','long','often','many']]
+    ].forEach(function(x){choice('Unit 1 — Grammar (1)',x[0],x[1],mcq.apply(null,x[2]));});
+    [
+      ['1. Ali play football yesterday. (Correct the verb)','played'],
+      ['2. You should cleaned your room every day. (Correct the verb)','clean'],
+      ['3. We must wearing a seatbelt. (Correct the verb)','wear'],
+      ['4. I has to stop at the red light. (Correct the verb)','have'],
+      ['5. How many coffee do you have every day? (Correct the word)','much'],
+      ['6. How much apples do you eat every day? (Correct the word)','many'],
+      ['7. The window is closed. Can you open them? (Correct the pronoun)','it'],
+      ['8. He must work on Friday. (Use: not)','he must not work on Friday||he mustn’t work on Friday'],
+      ['9. We should run very fast. (Use: not)','we should not run very fast||we shouldn’t run very fast']
+    ].forEach(function(x){text('Grammar — Do as shown (1)',x[0],x[1]);});
+    match('Unit 2 — Language Function (2) — Match 1',['1. What are you going to play next week?','2. Could you talk when you were three?','3. Do you have to read this old story?','4. What must we do in the library?',"5. What's the matter, Hamad?"],m3,['b','c','d','e','a']);
+    match('Unit 2 — Language Function (2) — Match 2',['1. What did you look like when you were five?','2. Would you like to go to the sea?','3. Did you have to write this text?','4. How many books do you want?','5. Should he drink warm water?'],m4,['e','a','b','c','d']);
+    var r2='My uncle grew up in a small village. When he was a boy, he had dark hair and green eyes. He had few things, but much love. He woke up early to birds singing. He could run fast, play football and catch fish. There was no electricity or phones. He walked far to school. In the morning, he worked hard to help his family in the fields. At night, he sat under the stars and heard family stories. He had a lot of fun. His stories teach me that family brings happiness.';
+    choice('Unit 2 — Reading (2)','1. What is the text MAINLY about?','A',mcq('A man who worked hard','A man who had dark hair','A man who woke up early','A man who had a lot of fun'),r2);
+    choice('Unit 2 — Reading (2)',"2. What does the underlined word 'fun' mean?",'A',mcq('nice','fast','hard','short'),r2);
+    text('Unit 2 — Reading (2)','3. What did his uncle look like as a boy?','dark hair and green eyes||he had dark hair and green eyes',r2);
+    text('Unit 2 — Reading (2)','4. What could his uncle do?','run fast, play football and catch fish||he could run fast, play football and catch fish',r2);
+    text('Unit 2 — Reading (2)','5. Why did his uncle work hard every morning?','to help his family in the fields||he helped his family in the fields||he worked hard to help his family in the fields',r2);
+    var vb2=['medicine','delicious','expensive','dark','sauce','cross'];
+    ["1. Don't take any ______ without asking a doctor first.",'2. This cake is ______. I like eating it.',"3. His car is very ______. I can't buy it.",'4. Ali has got ______ hair.','5. I like tomato ______. It is delicious.','6. He helped the old man ______ the street.'].forEach(function(q,i){fillBlank('Unit 2 — Vocabulary (2) — Fill in the gaps',q,vb2[i],words(['cross','sauce','dark','expensive','delicious','medicine']),'Choose a suitable word from the word box.','fill_2');});
+    choice('Unit 2 — Vocabulary (2)','7. Don’t use this ______. It is not safe.','A',[{value:'A',label:'A. app'},{value:'B',label:'B. mall'},{value:'C',label:'C. park'},{value:'D',label:'D. school'}]);
+    choice('Unit 2 — Vocabulary (2)','8. My dad works as a ______. He takes photos.','D',mcq('doctor','teacher','secretary','photographer'));
+    choice('Unit 2 — Vocabulary (2)','9. I go to the ______ to have a cup of coffee.','C',mcq('bill','car','café','school'));
+    [
+      ['1. You should ______ your face every day.','A',['sleep','sleeps','to sleep','sleeping']],
+      ['2. We ______ the park yesterday.','C',['clean','cleans','cleaned','cleaning']],
+      ["3. My sister didn't ______ to make a cake last week.",'C',['has','had','have','is having']],
+      ['4. I ______ to do my homework today.','C',['has','had','have','having']],
+      ['5. My car doesn’t work. I will fix ______.','A',['it','her','him','them']]
+    ].forEach(function(x){choice('Unit 2 — Grammar (2)',x[0],x[1],mcq.apply(null,x[2]));});
+    [
+      ['1. The book is on the desk. Can you give them to me? (Correct the pronoun)','it'],
+      ['2. You must touch the painting. (Use: not)','you must not touch the painting||you mustn’t touch the painting'],
+      ['3. How many milk do you drink every morning? (Correct the word)','much'],
+      ['4. How much apples do you eat every day? (Correct the word)','many'],
+      ['5. My friend climb a mountain yesterday. (Correct the verb)','climbed'],
+      ['6. My sister cook food last week. (Correct the verb)','cooked'],
+      ['7. You should drinking more water. (Correct the verb)','drink'],
+      ['8. I must finished my project today. (Correct the verb)','finish'],
+      ['9. He should eat too much sugar. (Use: not)','he should not eat too much sugar||he shouldn’t eat too much sugar']
+    ].forEach(function(x){text('Grammar — Do as shown (2)',x[0],x[1]);});
+    match('Unit 3 — Language Function (3) — Match 1',["1. I've got a headache. What should I do?","2. Could you run when you were two?",'3. Do you have to play tennis on Friday?','4. What must we do in the park?', "5. What's the matter, Khaled?"],m5,['b','c','d','e','a']);
+    match('Unit 3 — Language Function (3) — Match 2',['1. What did you look like when you were five?','2. Would you like to go to the museum?','3. Did you have to water the trees?','4. How many pens do you want?','5. Should I see the doctor?'],m6,['e','a','b','c','d']);
+    var r3='Pizza is a tasty dish from Italy. It first came out in a small Italian town. It is an important part of Italian traditions. Today, pizza became one of the most popular foods in the world. In Italy, some people like to eat pizza with a knife and a fork. They usually enjoy it with their friends. Pizza contains cheese and other ingredients. Pizza comes in all shapes and sizes, and it is baked in very hot ovens. Many people like to bake pizza at home because it is healthier. You can also buy pizza from restaurants offering fast food. Pizza is the most famous fast food in Europe, Asia, and America. People from all over the world love it.';
+    choice('Unit 3 — Reading (3)','1. What is the text MAINLY about?','A',mcq('food','countries','traditions','restaurants'),r3);
+    choice('Unit 3 — Reading (3)',"2. What does the underlined word 'tasty' mean?",'C',mcq('fast','strong','delicious','important'),r3);
+    text('Unit 3 — Reading (3)','3. Where does pizza come from?','Italy||Italy.',r3);
+    text('Unit 3 — Reading (3)','4. How do some people like to eat pizza?','with a knife and a fork||with knife and fork||they eat pizza with a knife and a fork',r3);
+    text('Unit 3 — Reading (3)','5. Why do many people like to bake pizza at home?','because it is healthier||it is healthier||because baking pizza at home is healthier',r3);
+    var vb3=['pick up','baseball','pass','order','learn','bicycle'];
+    ['1. You can ______ your pen and start writing.','2. He plays ______ every week.','3. Could you please ______ me the sugar.','4. He will ______ food online.','5. I want to ______ the English language.',"6. There's a ______ lane for bike riders."].forEach(function(q,i){fillBlank('Unit 3 — Vocabulary (3) — Fill in the gaps',q,vb3[i],words(['pass','pick up','baseball','order','bicycle','learn']),'Choose a suitable word from the word box.','fill_3');});
+    choice('Unit 3 — Vocabulary (3)','7. My uncle is a ______. He reports the news on TV.','C',mcq('doctor','teacher','reporter','photographer'));
+    choice('Unit 3 — Vocabulary (3)','8. The ______ size of my laptop is very large.','D',mcq('car','door','pencil','screen'));
+    choice('Unit 3 — Vocabulary (3)','9. I went to the ______ to buy fruit.','A',mcq('market','school','hospital','museum'));
+    [
+      ['1. We ______ to school yesterday.','C',['walk','walks','walked','walking']],
+      ['2. They ______ to water the plants.','C',['has','had','have','is having']],
+      ['3. You must ______ being noisy.','A',['stop','stops','stopped','stopping']],
+      ['4. We should ______ our school clean every day.','A',['keep','keeps','to keep','keeping']],
+      ['5. How ______ water do the plants need?','D',['tall','long','often','much']]
+    ].forEach(function(x){choice('Unit 3 — Grammar (3)',x[0],x[1],mcq.apply(null,x[2]));});
+    [
+      ['1. How many tea do you drink every night? (Correct the word)','much'],
+      ['2. How much tables did you buy last week? (Correct the word)','many'],
+      ['3. The box is heavy. Can you help me carry them? (Correct the pronoun)','it'],
+      ['4. They move to a new house yesterday. (Correct the verb)','moved'],
+      ['5. You should planting trees in the park. (Correct the verb)','plant'],
+      ['6. He must showed his ID at the gate. (Correct the verb)','show'],
+      ["7. We didn't has to pay for parking. (Correct the verb)",'have'],
+      ['8. Visitors must feed the animals in the zoo. (Use: not)','visitors must not feed the animals in the zoo||visitors mustn’t feed the animals in the zoo'],
+      ['9. He should come to the party tonight. (Use: not)','he should not come to the party tonight||he shouldn’t come to the party tonight']
+    ].forEach(function(x){text('Grammar — Do as shown (3)',x[0],x[1]);});
+    function addOrderTask(section,taskId,title,sentences,shuffle){
+      shuffle.forEach(function(sentenceIndex){
+        var id='g6e_'+(++n), position=sentenceIndex+1;
+        fields.push({id:id,section:section,prompt:sentences[sentenceIndex],points:1,type:'drag_order',taskId:taskId,taskTitle:title,correctPosition:position});
+        answerKey[id]=String(position);
+      });
+    }
+    addOrderTask('Unit 3 — Writing (1) — Email: A Visit to Souq Waqif','souq_order','Arrange the sentences to complete the email about a visit to Souq Waqif. Drag each sentence into the correct position.',['I went to Souq Waqif.','I went by car.','It was a nice place.','I walked in the market.','I saw many shops.','I ate nice food.','I was very happy.'],[3,0,5,2,6,1,4]);
+    addOrderTask('Final Page — Unit 3 — Writing (2) — Email: A Visit to Saudi Arabia','ksa_order','Arrange the sentences to complete the email about a visit to Saudi Arabia. Drag each sentence into the correct position.',['I went to KSA.','I visited Mecca.','I went by car.','I did Omrah.','I saw Kaabah.','I prayed near it.','I was very happy.'],[4,2,0,5,1,6,3]);
+    var baseMaxScore=fields.reduce(function(t,f){return t+Number(f.points||1);},0);
+    var bonusMaxScore=372;
+    var maxScore=baseMaxScore+bonusMaxScore;
+    if(fields.length!==128||baseMaxScore!==128||maxScore!==500)throw new Error('Worksheet count mismatch: '+fields.length+'/'+baseMaxScore+'/'+maxScore);
+    return {fields:fields,answerKey:answerKey,maxScore:maxScore,baseMaxScore:baseMaxScore,bonusMaxScore:bonusMaxScore,scoringMode:'base_plus_scaled_bonus'};
+  }
+  window.buildGrade6EnrichmentWorkbookData=build;
+})();
+</script>
+<script>
+(function(){
+const book=window.buildGrade6EnrichmentWorkbookData();const fields=book.fields;const key=book.answerKey;const root=document.getElementById('worksheet');
+if(fields.length!==128||book.maxScore!==500){root.textContent='Worksheet data validation failed.';return;}
+const norm=v=>String(v??'').toLowerCase().trim().replace(/[\\s.,!?;:،؛]/g,'');
+const colors=['#e11d48','#2563eb','#16a34a','#9333ea','#d97706','#0891b2','#be123c'];
+const used=new Set(),values={};let currentSection='';
+function el(tag,cls,text){const x=document.createElement(tag);if(cls)x.className=cls;if(text!==undefined)x.textContent=text;return x;}
+function getVal(id){const x=document.getElementById(id);return x?String(x.value||'').trim():'';}
+function setVal(id,v){const x=document.getElementById(id);if(x)x.value=v;}
+function makeCard(f,i){const c=el('section','card');const p=el('div','prompt',(i+1)+'. '+f.prompt);c.append(p);if(f.context)c.append(el('div','context',f.context));let input;
+if(f.type==='choice'){input=el('select','answer');input.id=f.id;input.append(new Option('-- Select an answer --',''));(f.options||[]).forEach(o=>input.append(new Option(o.label||o.value,o.value)));}
+else{input=el('input','answer');input.id=f.id;input.type='text';input.placeholder=f.type==='correct_verb'?'Type the corrected verb (or the full sentence)...':'Type your answer here...';}
+c.append(input);return c;}
+function renderMatch(group){
+const fs=fields.filter(x=>x.type==='line_match'&&x.matchGroup===group),card=el('section','task');card.append(el('h3',null,'Match each question with the correct answer'));
+const wrap=el('div','matchwrap'),grid=el('div','matchgrid'),left=el('div','matchcol'),right=el('div','matchcol'),svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('matchlines');
+let selected=null;const pairs={};const opts=fs[0].matchOptions||[];
+fs.forEach(f=>{const b=el('button','matchitem',f.prompt);b.type='button';b.dataset.id=f.id;b.onclick=()=>{selected=f.id;left.querySelectorAll('button').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');};left.append(b);});
+opts.forEach(o=>{const b=el('button','matchitem answeritem',o.label||o.value);b.type='button';b.dataset.answer=o.value;b.onclick=()=>{if(!selected){alert('Select a question in the left column first.');return;}Object.keys(pairs).forEach(k=>{if(pairs[k]===o.value)delete pairs[k];});pairs[selected]=String(o.value);fs.forEach(f=>setVal(f.id,pairs[f.id]||''));selected=null;left.querySelectorAll('button').forEach(x=>x.classList.remove('selected'));draw();};right.append(b);});
+grid.append(left,right);wrap.append(svg,grid);card.append(wrap);
+function draw(){svg.replaceChildren();const r=wrap.getBoundingClientRect();svg.setAttribute('viewBox','0 0 '+r.width+' '+r.height);Object.keys(pairs).forEach(id=>{const q=left.querySelector('[data-id="'+id+'"]'),a=[...right.querySelectorAll('button')].find(x=>x.dataset.answer===pairs[id]);if(!q||!a)return;const qr=q.getBoundingClientRect(),ar=a.getBoundingClientRect(),wr=wrap.getBoundingClientRect(),ln=document.createElementNS('http://www.w3.org/2000/svg','line');ln.setAttribute('x1',qr.right-wr.left);ln.setAttribute('y1',qr.top+qr.height/2-wr.top);ln.setAttribute('x2',ar.left-wr.left);ln.setAttribute('y2',ar.top+ar.height/2-wr.top);ln.setAttribute('stroke',colors[fs.findIndex(f=>f.id===id)%colors.length]);ln.setAttribute('stroke-width','4');ln.setAttribute('stroke-linecap','round');svg.append(ln);});}
+window.addEventListener('resize',draw);setTimeout(draw,0);return card;
+}
+function renderFill(group){
+const fs=fields.filter(x=>x.type==='fill_blank'&&x.fillGroup===group),card=el('section','task');card.append(el('h3',null,'Drag the suitable words into the gaps'));const bank=el('div','bank'),rows=el('div');
+const words=fs[0].wordBank||[];let chosen=null;const btns={};
+words.forEach(w=>{const b=el('button','chip',w.label||w.value);b.type='button';b.draggable=true;b.dataset.word=w.value;b.onclick=()=>{chosen=String(w.value);bank.querySelectorAll('button').forEach(x=>x.style.outline='');b.style.outline='3px solid #2563eb';};b.ondragstart=e=>e.dataTransfer.setData('text/plain',w.value);bank.append(b);btns[w.value]=b;});
+fs.forEach(f=>{const row=el('div','fillrow'),q=el('span','q',f.prompt),slot=el('button','drop','Drop a word here');slot.type='button';slot.dataset.id=f.id;const hidden=el('input');hidden.type='hidden';hidden.id=f.id;
+function put(w){if(!w)return;fs.forEach(other=>{if(other.id!==f.id&&getVal(other.id)===w){setVal(other.id,'');const old=rows.querySelector('[data-id="'+other.id+'"]');if(old)old.textContent='Drop a word here';}});const prev=getVal(f.id);if(prev&&btns[prev])btns[prev].disabled=false;setVal(f.id,w);slot.textContent=w;slot.style.background='#dcfce7';if(btns[w])btns[w].disabled=true;chosen=null;bank.querySelectorAll('button').forEach(x=>x.style.outline='');}
+slot.ondragover=e=>e.preventDefault();slot.ondrop=e=>{e.preventDefault();put(e.dataTransfer.getData('text/plain'));};slot.onclick=()=>{if(chosen)put(chosen);};row.append(q,slot,hidden);rows.append(row);});
+card.append(bank,rows,el('p','small','On a touch screen, tap a word and then tap its gap.'));return card;
+}
+function renderOrder(taskId){
+const fs=fields.filter(x=>x.type==='drag_order'&&x.taskId===taskId),card=el('section','task');card.append(el('h3',null,fs[0].taskTitle||'Arrange the sentences'));
+const bank=el('div','bank'),slots=el('div','slots'),selected={};const shuffled=fs.slice();
+shuffled.forEach(f=>{const b=el('button','sentence',f.prompt);b.type='button';b.draggable=true;b.dataset.id=f.id;b.ondragstart=e=>e.dataTransfer.setData('text/plain',f.id);b.onclick=()=>{selected.id=f.id;bank.querySelectorAll('button').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');};bank.append(b);});
+fs.forEach((f,i)=>{const slot=el('div','slot'),num=el('b',null,(i+1)+'.'),txt=el('span','droptext','Drop a sentence here'),h=el('input');h.type='hidden';h.id=f.id;slot.dataset.pos=String(i+1);slot.append(num,txt,h);
+function put(id){if(!id)return;const target=fields.find(x=>x.id===id);if(!target)return;fs.forEach(x=>{if(x.id!==id&&getVal(x.id)===slot.dataset.pos)setVal(x.id,'');});setVal(id,slot.dataset.pos);txt.textContent=target.prompt;slot.dataset.id=id;bank.querySelectorAll('button').forEach(b=>b.classList.toggle('used',b.dataset.id===id));}
+slot.ondragover=e=>e.preventDefault();slot.ondrop=e=>{e.preventDefault();put(e.dataTransfer.getData('text/plain'));};slot.onclick=()=>{if(selected.id){put(selected.id);selected.id=null;}};slots.append(slot);});
+card.append(el('p','small','Drag sentences from the word bank into the numbered spaces. On a touch screen, tap a sentence and then tap a space.'),bank,slots);return card;
+}
+const seen=new Set();fields.forEach((f,i)=>{if(f.section&&f.section!==currentSection){currentSection=f.section;root.append(el('div','section',currentSection));}
+if(f.type==='line_match'){if(seen.has(f.matchGroup))return;seen.add(f.matchGroup);root.append(renderMatch(f.matchGroup));return;}
+if(f.type==='fill_blank'){if(seen.has(f.fillGroup))return;seen.add(f.fillGroup);root.append(renderFill(f.fillGroup));return;}
+if(f.type==='drag_order'){if(seen.has(f.taskId))return;seen.add(f.taskId);root.append(renderOrder(f.taskId));return;}
+root.append(makeCard(f,i));
+});
+document.getElementById('check').onclick=()=>{
+let correct=0,answered=0;const details=[];
+fields.forEach(f=>{const v=getVal(f.id),expected=String(key[f.id]||'').split('||').map(norm);if(v)answered++;let ok=false;
+if(f.type==='drag_order')ok=expected.includes(norm(v));
+else if(f.type==='line_match'||f.type==='fill_blank'||f.type==='choice')ok=expected.includes(norm(v));
+else if(f.type==='correct_verb'){const exp=expected;const tokens=norm(v).split(/[^a-z0-9']+/);ok=exp.some(e=>e===norm(v)|| (e.split(/[^a-z0-9']+/).filter(Boolean).length===1&&tokens.includes(e)));}
+else if(/reading/i.test(f.section||'')){const stop=new Set(['the','and','for','with','from','that','this','they','them','their','there','where','when','what','which','who','why','how','are','was','were','is','am','a','an','to','of','in','on','at','by','it','he','she','we','you','i','do','does','did','because','many','much','very']);const kws=new Set(expected.join(' ').split(/[^a-z0-9]+/).filter(w=>w.length>2&&!stop.has(w)));ok=expected.includes(norm(v))||norm(v).split(/[^a-z0-9]+/).some(w=>kws.has(w));}
+else ok=expected.includes(norm(v));
+if(ok)correct++;details.push({f,v,ok});
+});
+const bonus=Math.round(372*correct/128),total=correct+bonus,res=document.getElementById('result');res.style.display='block';res.innerHTML='<h2>Preview Result</h2><p><strong>'+total+' / 500 points</strong></p><p>Correct answers: '+correct+' / 128</p><p>Base points: '+correct+' / 128</p><p>Bonus points: '+bonus+' / 372</p><p>Answered questions: '+answered+' / 128</p><p class="small">This is a local preview score only. No student record or school points have been changed.</p><details><summary>Review answers</summary><ol>'+details.map(x=>'<li style="margin:8px 0"><b>'+x.f.prompt+'</b><br>Your answer: '+(x.v||'—')+' <span style="color:'+(x.ok?'#047857':'#b91c1c')+'">'+(x.ok?'Correct':'Check answer')+'</span></li>').join('')+'</ol></details>';res.scrollIntoView({behavior:'smooth'});
+};
+document.getElementById('reset').onclick=()=>location.reload();
+})();
+</script></body></html>
