@@ -25,6 +25,13 @@ function capsulePerson(T,group,uniform,skin,hat){
 function makeButton(label,fn,host,cls=""){
  const b=document.createElement("button");b.type="button";b.textContent=label;b.style.cssText="border:0;border-radius:14px;padding:13px 16px;background:#0f766e;color:white;font-weight:900;font-size:15px;min-width:62px;box-shadow:0 4px 0 #115e59;touch-action:manipulation;"+cls;b.addEventListener("pointerdown",e=>{e.preventDefault();fn(true);});b.addEventListener("pointerup",()=>fn(false));b.addEventListener("pointerleave",()=>fn(false));b.addEventListener("pointercancel",()=>fn(false));host.appendChild(b);return b;
 }
+function bindKeyboardActions(g,actions){
+ const down=e=>{const action=actions[e.key]||actions[String(e.key||"").toLowerCase()];if(!action||e.repeat)return;e.preventDefault();if(typeof action==="function")action();else if(action.down)action.down();};
+ const up=e=>{const action=actions[e.key]||actions[String(e.key||"").toLowerCase()];if(action&&typeof action!=="function"&&action.up)action.up();};
+ const clear=()=>Object.values(actions).forEach(action=>{if(action&&typeof action!=="function"&&action.up)action.up();});
+ window.addEventListener("keydown",down);window.addEventListener("keyup",up);window.addEventListener("blur",clear);
+ g.addCleanup(()=>{window.removeEventListener("keydown",down);window.removeEventListener("keyup",up);window.removeEventListener("blur",clear);clear();});
+}
 function bindKeyboard(g,keys,mapping){
  const down=e=>{const action=mapping[e.key]||mapping[String(e.key||"").toLowerCase()];if(!action||e.repeat)return;e.preventDefault();keys[action]=true;};
  const up=e=>{const action=mapping[e.key]||mapping[String(e.key||"").toLowerCase()];if(action){e.preventDefault();keys[action]=false;}};
@@ -197,7 +204,7 @@ function race(T,opts){
  const obstacles=[];for(let i=0;i<12;i++){const o=box(T,1.3,.8,1.3,mat(T,[0xf97316,0xfacc15,0x9333ea][i%3]),(i%3-1)*3,-.02,-8-i*6);g.scene.add(o);obstacles.push(o);}
  const finish=box(T,12,.16,.5,mat(T,0xfacc15),0,.2,-78);g.scene.add(finish);
  let lane=0,dist=0,done=false,crashes=0;const set=(n)=>lane=Math.max(-1,Math.min(1,lane+n));
- makeButton("⬅️",()=>set(-1),g.controls);makeButton("➡️",()=>set(1),g.controls);
+ makeButton("⬅️",()=>set(-1),g.controls);makeButton("➡️",()=>set(1),g.controls);bindKeyboardActions(g,{ArrowLeft:()=>set(-1),a:()=>set(-1),ArrowRight:()=>set(1),d:()=>set(1)});
  g.render((dt,t)=>{if(done)return;dist+=dt*9;car.position.x+=(lane*3-car.position.x)*dt*5;car.position.z=6-dist;car.rotation.z+=(lane*.12-car.rotation.z)*dt*4;g.camera.position.set(car.position.x*.35,5,car.position.z+10);g.camera.lookAt(car.position.x,1,car.position.z-9);obstacles.forEach(o=>{if(!o.userData.hit&&Math.abs(o.position.z-car.position.z)<1.2&&Math.abs(o.position.x-car.position.x)<1.25){o.userData.hit=true;o.material=mat(T,0x555555);crashes++;g.sound("hit");dist=Math.max(0,dist-5);g.hint.textContent="💥 اصطدام! تفادى الحواجز. الاصطدامات: "+crashes+"/3";if(crashes>=3){done=true;g.finish(false,"انتهى السباق بسبب الاصطدامات الكثيرة.");}}});g.score.textContent="المسافة: "+Math.min(100,Math.round(dist/0.84))+"%";if(dist>=84&&!done){done=true;g.finish(true,"🏁 وصلت إلى خط النهاية!");}});
 }
 function blocks(T,opts){
@@ -262,6 +269,8 @@ function thief(T,opts){
  const cars=[];for(let i=0;i<9;i++){const x=(i%3-1)*4,z=-4-i*9;const car=box(T,2,.9,3,mat(T,[0xdc2626,0xf59e0b,0x64748b][i%3]),x,.55,z);g.scene.add(car);cars.push(car);}
  g.camera.position.set(0,6,14);let lane=0,sprint=false,progress=0,collisions=0,done=false;
  makeButton("⬅️ يسار",()=>lane=Math.max(-1,lane-1),g.controls);makeButton("⚡ اندفاع",v=>sprint=v,g.controls);makeButton("يمين ➡️",()=>lane=Math.min(1,lane+1),g.controls);
+ bindKeyboardActions(g,{ArrowLeft:()=>lane=Math.max(-1,lane-1),a:()=>lane=Math.max(-1,lane-1),ArrowRight:()=>lane=Math.min(1,lane+1),d:()=>lane=Math.min(1,lane+1)," ":{down:()=>sprint=true,up:()=>sprint=false}});
+
  g.render((dt,t)=>{if(done)return;const speed=sprint?13:8;progress+=dt*speed;cop.position.x+=(lane*3-cop.position.x)*dt*5;cop.position.z=6-progress;robber.position.z=-4-progress*.75;robber.position.x=Math.sin(t*1.1)*1.7;cp.leg1.rotation.x=Math.sin(t*14)*.65;cp.leg2.rotation.x=-cp.leg1.rotation.x;g.camera.position.x+=(cop.position.x*.3-g.camera.position.x)*dt*3;g.camera.position.z=cop.position.z+10;g.camera.lookAt(cop.position.x,1,cop.position.z-9);cars.forEach(c=>{if(!c.userData.hit&&Math.abs(c.position.z-cop.position.z)<1.4&&Math.abs(c.position.x-cop.position.x)<1.5){c.userData.hit=true;collisions++;g.sound("hit");progress=Math.max(0,progress-4);g.hint.textContent="🚗 عائق في الطريق! اصطدامات: "+collisions+"/3";if(collisions>=3){done=true;g.finish(false,"هرب اللص بعد أن تعطلت المطاردة!");}}});g.score.textContent="مسافة المطاردة: "+Math.round(progress)+" م";if(progress>=48&&!done){done=true;g.finish(true,"🚓 أمسكت باللص! أحسنت أيها الشرطي!");}});
 }
 function maze(T,opts){
