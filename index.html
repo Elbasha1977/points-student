@@ -61,23 +61,23 @@ body{margin:0;background:linear-gradient(135deg,#dbeafe,#c7d2fe);padding:14px;mi
 </head>
 <body>
 <div class="container" id="studentPortal">
- <div class="header"><h1 id="stTitle">⏳ جاري تحميل ورقة العمل...</h1><p>بوابة الطالب — نظام النقاط والتحفيز المدرسي</p></div>
+ <div class="header"><h1 id="stTitle">⏳ Loading worksheet...</h1><p>Student Portal — Points and Rewards System</p></div>
  <div class="section" id="stInfoForm">
   <h2>بيانات الطالب</h2>
-  <label style="font-weight:bold;display:block;margin-bottom:6px">اختر الصف:</label>
+  <label style="font-weight:bold;display:block;margin-bottom:6px">Select your class:</label>
   <select id="stClass" onchange="populateStudentNames()" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;font-size:16px;margin-bottom:14px">
-   <option value="">-- اختر الصف --</option>
+   <option value="">-- Select class --</option>
    <option value="السادس 2">السادس 2</option><option value="السادس 4">السادس 4</option><option value="السادس 6">السادس 6</option>
   </select>
   <label style="font-weight:bold;display:block;margin-bottom:6px">اسمك:</label>
-  <select id="stName" disabled style="width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;font-size:16px;margin-bottom:14px"><option value="">-- اختر الصف أولاً --</option></select>
+  <select id="stName" disabled style="width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;font-size:16px;margin-bottom:14px"><option value="">-- Select a class first --</option></select>
   <label style="font-weight:bold;display:block;margin-bottom:6px">الرقم السري الخاص بك (4 أرقام):</label>
   <input id="stPin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="off" placeholder="أدخل الرقم السري المخصص لك" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;font-size:18px;text-align:center;letter-spacing:8px;margin:10px 0 14px">
   <button id="stStartBtn" class="action-btn primary" onclick="startStudentWorksheet()" style="width:100%" disabled>⏳ جاري تحميل الورقة...</button>
-  <button type="button" class="action-btn" onclick="showMyHomeworkResults()" style="width:100%;margin-top:10px;background:#0f766e;color:white">🏅 عرض نتائج نقاط واجباتي</button>
-  <button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف في واجبات النقاط المنزلية</button>
-  <button type="button" class="action-btn" onclick="openGoldenQuestion()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#b8860b,#facc15);color:#422006;font-size:18px;border:2px solid #fef3c7">👑 Golden Question — السؤال الذهبي</button>
-  <button type="button" class="action-btn" onclick="openDailyChallenge()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#ea580c,#f59e0b);color:white">🔥 تحدي اليوم — فرصة جديدة لجمع النقاط</button>
+  <button type="button" class="action-btn" onclick="showMyHomeworkResults()" style="width:100%;margin-top:10px;background:#0f766e;color:white">🏅 View My Homework Points</button>
+  <button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 Homework Points Honor Board</button>
+  <button type="button" class="action-btn" onclick="openGoldenQuestion()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#b8860b,#facc15);color:#422006;font-size:18px;border:2px solid #fef3c7">👑 Golden Question</button>
+  <button type="button" class="action-btn" onclick="openDailyChallenge()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#ea580c,#f59e0b);color:white">🔥 Daily Challenge — Earn More Points</button>
   <button type="button" id="questionHunterLaunchBtn" class="action-btn" onclick="questionHunterLaunch()" style="display:block;width:100%;margin-top:10px;background:linear-gradient(135deg,#0f766e,#0891b2);color:white;font-size:18px">🎮 العب واكسب</button>
   <div id="questionHunterAvailabilityMsg" style="display:none;margin-top:8px;padding:10px;border-radius:10px;background:#eff6ff;color:#1e40af;font-size:13px;text-align:center;line-height:1.7"></div>
     <div id="myHomeworkResults" style="display:none;margin-top:14px;padding:12px;border-radius:10px;background:#ecfeff;text-align:right"></div>
@@ -85,31 +85,31 @@ body{margin:0;background:linear-gradient(135deg,#dbeafe,#c7d2fe);padding:14px;mi
  <div class="section" id="stWorkspace" style="display:none;position:relative;text-align:center;padding:12px;background:#f1f5f9;overflow:auto">
   <div id="stTimerPanel" style="display:none;position:sticky;top:6px;z-index:20;background:#1e3a8a;color:white;padding:12px;border-radius:10px;margin:0 auto 14px;max-width:360px;font-size:20px;font-weight:900">⏳ الوقت المتبقي: <span id="stTimerValue">--:--</span></div>
   <div id="stTimingMessage" style="display:none;color:#b91c1c;font-weight:bold;margin-bottom:10px"></div>
-  <div style="position:relative;display:inline-block;width:100%" id="stImgContainer"><img id="stImg" alt="صورة ورقة العمل"><div id="stFields" style="position:absolute;top:0;left:0;width:100%;height:100%"></div></div>
+  <div style="position:relative;display:inline-block;width:100%" id="stImgContainer"><img id="stImg" alt="Worksheet image"><div id="stFields" style="position:absolute;top:0;left:0;width:100%;height:100%"></div></div>
  </div>
  <div class="section" id="stSubmitArea" style="display:none;text-align:center">
-  <button class="action-btn success" onclick="submitStudentAnswers()" style="width:100%">✅ إرسال الإجابات</button>
-  <button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف في واجبات النقاط المنزلية</button>
+  <button class="action-btn success" onclick="submitStudentAnswers()" style="width:100%">✅ Submit Answers</button>
+  <button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 Homework Points Honor Board</button>
   <button type="button" class="action-btn" onclick="openDailyChallenge()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#ea580c,#f59e0b);color:white">🔥 تحدي اليوم</button>
   <div id="studentHomeworkHonorBoard" style="display:none;margin-top:16px;padding:16px;border-radius:16px;background:linear-gradient(135deg,#fffbeb,#fef3c7);text-align:right"></div>
  </div>
- <div class="section" id="stSuccess" style="display:none;text-align:center"><h1 style="font-size:60px">🎉</h1><h2 style="color:#16a34a">تم إرسال إجاباتك بنجاح!</h2><p style="color:#166534;font-weight:bold">تم تسجيل إجابتك في هذه الدورة. يمكنك حل الورقة مرة أخرى بعد أن يعيد المعلم تفعيلها.</p><button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:18px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف</button>
+ <div class="section" id="stSuccess" style="display:none;text-align:center"><h1 style="font-size:60px">🎉</h1><h2 style="color:#16a34a">Your answers have been submitted successfully!</h2><p style="color:#166534;font-weight:bold">Your submission has been recorded for this round. You can try again when your teacher reactivates the worksheet.</p><button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:18px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف</button>
  <button type="button" class="action-btn" onclick="openDailyChallenge()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#ea580c,#f59e0b);color:white">🔥 تحدي اليوم</button><div id="studentHomeworkHonorBoardSuccess" style="display:none;margin-top:16px;padding:16px;border-radius:16px;background:linear-gradient(135deg,#fffbeb,#fef3c7);text-align:right"></div></div>
  <div class="section" id="questionHunterPanel" style="display:none;border:2px solid #0ea5e9;background:linear-gradient(135deg,#eff6ff,#ecfeff)">
-  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2 style="color:#0369a1;margin:0">🎯 صائد الأسئلة</h2><button type="button" class="action-btn" onclick="closeQuestionHunter()" style="background:#64748b;padding:8px 12px">إغلاق</button></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2 style="color:#0369a1;margin:0">🎯 صائد الأسئلة</h2><button type="button" class="action-btn" onclick="closeQuestionHunter()" style="background:#64748b;padding:8px 12px">Close</button></div>
   <div id="questionHunterContent" style="margin-top:14px;text-align:right"></div>
  </div>
 
  <div class="section" id="goldenQuestionPanel" style="display:none;border:3px solid #d4a017;background:linear-gradient(135deg,#fffbeb,#fef3c7)">
-  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2 style="color:#a16207;margin:0">👑 Golden Question — السؤال الذهبي</h2><button type="button" class="action-btn" onclick="closeGoldenQuestion()" style="background:#64748b">إغلاق</button></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2 style="color:#a16207;margin:0">👑 Golden Question</h2><button type="button" class="action-btn" onclick="closeGoldenQuestion()" style="background:#64748b">Close</button></div>
   <div id="goldenQuestionContent" style="margin-top:14px;text-align:right"></div>
  </div>
  <div class="section" id="dailyChallengePanel" style="display:none;border:2px solid #f59e0b;background:linear-gradient(135deg,#fff7ed,#fffbeb)">
   <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
    <h2 style="color:#c2410c;margin:0">🔥 تحدي اليوم</h2>
-   <button type="button" class="action-btn" onclick="closeDailyChallenge()" style="background:#64748b;padding:8px 12px">إغلاق</button>
+   <button type="button" class="action-btn" onclick="closeDailyChallenge()" style="background:#64748b;padding:8px 12px">Close</button>
   </div>
-  <div id="dailyChallengeContent" style="margin-top:14px;text-align:right">اضغط «تحميل التحدي» لعرض سؤال اليوم.</div>
+  <div id="dailyChallengeContent" style="margin-top:14px;text-align:right">Click “Load Challenge” to see today's question.</div>
  </div>
 </div>
 <script src="./question-hunter-3d.js"></script>
@@ -199,35 +199,35 @@ setTimeout(() => {
     const startBtn = document.getElementById('stStartBtn');
 
     if (!worksheetId) {
-        if (titleEl) titleEl.innerText = 'بوابة الطالب — أدخل بياناتك لفتح ورقة العمل أو تحدي اليوم';
+        if (titleEl) titleEl.innerText = 'Student Portal — Enter your details to open the worksheet or daily challenge';
         if (startBtn) {
             startBtn.disabled = true;
-            startBtn.textContent = 'افتح رابط ورقة العمل أولاً';
+            startBtn.textContent = 'Open the worksheet link first';
         }
         return;
     }
 
-    if (titleEl) titleEl.innerText = '⏳ جاري تحميل ورقة العمل...';
+    if (titleEl) titleEl.innerText = '⏳ Loading worksheet...';
     firestoreDb.collection('worksheets').doc(worksheetId).get().then(doc => {
         if (doc.exists) {
             window.currentStudentWorksheet = doc.data();
-            if (titleEl) titleEl.innerText = window.currentStudentWorksheet.title || 'ورقة العمل';
+            if (titleEl) titleEl.innerText = window.currentStudentWorksheet.title || 'Worksheet';
             if (startBtn) {
                 const worksheetActive = window.currentStudentWorksheet.active !== false;
                 startBtn.disabled = !worksheetActive;
                 startBtn.textContent = worksheetActive
-                    ? '🚀 ابدأ الإجابة'
+                    ? '🚀 Start Worksheet'
                     : '⏸️ الحل متوقف — انتظر إعادة تفعيل المعلم';
             }
         } else {
-            if (titleEl) titleEl.innerText = '❌ الورقة غير موجودة أو تم حذفها';
+            if (titleEl) titleEl.innerText = '❌ Worksheet not found or has been deleted';
             if (startBtn) {
                 startBtn.disabled = true;
-                startBtn.textContent = 'الورقة غير متاحة';
+                startBtn.textContent = 'Worksheet unavailable';
             }
         }
     }).catch(err => {
-        if (titleEl) titleEl.innerText = '❌ تعذر تحميل بيانات الورقة. تحقق من الاتصال وصلاحيات Firestore.';
+        if (titleEl) titleEl.innerText = '❌ Could not load worksheet data. Check your connection and access permissions.';
         if (startBtn) {
             startBtn.disabled = true;
             startBtn.textContent = 'تعذر التحميل';
@@ -243,11 +243,11 @@ window.populateStudentNames = function() {
   nameSelect.innerHTML = '';
   if (!cls || !STUDENT_NAMES_BY_CLASS[cls]) {
     nameSelect.disabled = true;
-    nameSelect.innerHTML = '<option value="">-- اختر الصف أولاً --</option>';
+    nameSelect.innerHTML = '<option value="">-- Select a class first --</option>';
     return;
   }
   nameSelect.disabled = false;
-  nameSelect.innerHTML = '<option value="">-- اختر اسم الطالب --</option>';
+  nameSelect.innerHTML = '<option value="">-- Select your name --</option>';
   STUDENT_NAMES_BY_CLASS[cls].forEach(name => {
     const option = document.createElement('option');
     option.value = name; option.textContent = name;
@@ -281,7 +281,7 @@ function runStudentWorksheetTimer(expiresAtMillis){
             stopStudentWorksheetTimer();
             window.__worksheetTimeExpired=true;
             const msg=document.getElementById('stTimingMessage');
-            if(msg){msg.style.display='block';msg.textContent='انتهى وقت المحاولة. جارٍ إرسال إجاباتك تلقائيًا.';}
+            if(msg){msg.style.display='block';msg.textContent='Time is up. Your answers are being submitted automatically.';}
             window.submitStudentAnswers(true);
         }
     };
@@ -296,13 +296,13 @@ window.startStudentWorksheet = async function() {
     if(!cls || !name) return alert('الرجاء اختيار الصف واسم الطالب من القائمة');
     if(!/^\d{4}$/.test(pin)) return alert('أدخل الرقم السري المكوّن من 4 أرقام.');
     const interactiveMode = window.currentStudentWorksheet && window.currentStudentWorksheet.layoutMode === 'interactive';
-    if(!window.currentStudentWorksheet || (!interactiveMode && !window.currentStudentWorksheet.imageUrl)) return alert('لم يتم تحميل ورقة العمل بصورة صحيحة. يرجى تحديث الصفحة والمحاولة مرة أخرى.');
-    if(window.currentStudentWorksheet.active === false) return alert('أوقف المعلم حل هذه الورقة مؤقتًا. يمكنك المحاولة مرة أخرى بعد إعادة تفعيلها.');
+    if(!window.currentStudentWorksheet || (!interactiveMode && !window.currentStudentWorksheet.imageUrl)) return alert('لم يتم تحميل Worksheet بصورة صحيحة. يرجى تحديث الصفحة والمحاولة مرة أخرى.');
+    if(window.currentStudentWorksheet.active === false) return alert('Your teacher has temporarily paused this worksheet. You can try again when it is reactivated.');
     const schoolId = String(window.currentStudentWorksheet.schoolId || 'global');
     const studentKey = await homeworkSha256(schoolId + '|' + cls + '|' + homeworkNormalizeName(name));
     const pinHash = await homeworkSha256(studentKey + '|' + pin);
     const worksheetId = new URLSearchParams(window.location.search).get('id');
-    if (!worksheetId) return alert('تعذر تحديد ورقة العمل. افتح الرابط المرسل من المعلم مرة أخرى.');
+    if (!worksheetId) return alert('تعذر تحديد Worksheet. افتح الرابط المرسل من المعلم مرة أخرى.');
     if(startBtn){startBtn.disabled=true;startBtn.textContent='⏳ جارٍ التحقق من الموعد والرقم السري...';}
     try {
         // يتحقق الخادم مباشرة من student_access عبر Admin SDK؛ لا نحتاج كتابة
@@ -418,7 +418,7 @@ window.startStudentWorksheet = async function() {
                 const card = document.createElement('section');
                 card.style.cssText = 'padding:14px;background:#fff;border:1px solid #cbd5e1;border-radius:13px;box-shadow:0 2px 7px #0000000a;';
                 const prompt = document.createElement('div');
-                prompt.textContent = (index+1)+'. '+String(field.prompt||'أجب عن السؤال');
+                prompt.textContent = (index+1)+'. '+String(field.prompt||'Answer the question');
                 prompt.style.cssText = 'font-size:16px;font-weight:800;color:#1e293b;line-height:1.8;margin-bottom:8px;';
                 card.appendChild(prompt);
                 if (field.context) {
@@ -430,26 +430,26 @@ window.startStudentWorksheet = async function() {
                 let control;
                 if (field.type === 'choice' && Array.isArray(field.options)) {
                     control = document.createElement('select');
-                    control.appendChild(new Option('-- اختر الإجابة --',''));
+                    control.appendChild(new Option('-- Select an answer --',''));
                     field.options.forEach(function(option) {
                         control.appendChild(new Option(String(option.label||option.value),String(option.value)));
                     });
                 } else {
                     control = document.createElement('input');
                     control.type = 'text';
-                    control.placeholder = field.section && field.section.indexOf('Writing') !== -1 ? 'اكتب الجملة هنا...' : 'اكتب إجابتك هنا...';
+                    control.placeholder = field.section && field.section.indexOf('Writing') !== -1 ? 'Type your sentence here...' : 'Type your answer here...';
                 }
                 control.id = field.id;
                 control.autocomplete = 'off';
                 control.style.cssText = 'display:block;width:100%;box-sizing:border-box;padding:12px;border:2px solid #bfdbfe;border-radius:9px;background:#f8fafc;font-size:16px;direction:ltr;text-align:left;';
                 card.appendChild(control);
                 const score = document.createElement('small');
-                score.textContent = 'درجة السؤال: '+Number(field.points||1)+' نقطة';
+                score.textContent = 'Question value: '+Number(field.points||1)+' points';
                 score.style.cssText = 'display:block;margin-top:7px;color:#64748b;';
                 card.appendChild(score);
                 host.appendChild(card);
             });
-            if (!fields.length) throw new Error('لم يتم تحميل أسئلة الملزمة.');
+            if (!fields.length) throw new Error('Worksheet questions could not be loaded.');
             return;
         }
         const img=document.getElementById('stImg');
@@ -471,9 +471,9 @@ window.startStudentWorksheet = async function() {
                 if(f.type==='long_text'){
                     el.style.cssText='position:relative;box-sizing:border-box;width:100%;min-height:390px;padding:16px;background:#fff;border:2px solid #2563eb;border-radius:14px;display:flex;flex-direction:column;align-items:stretch;gap:10px;box-shadow:0 4px 14px rgba(37,99,235,.10);';
                     const prompt=document.createElement('div');prompt.textContent=f.prompt||'اكتب إجابتك هنا';prompt.style.cssText='font-size:18px;font-weight:800;color:#1e3a8a;line-height:1.7;';
-                    const hint=document.createElement('div');hint.textContent='اكتب موضوعك هنا. يمكنك رؤية جميع الجمل ومراجعتها قبل الإرسال.';hint.style.cssText='font-size:14px;color:#475569;';
+                    const hint=document.createElement('div');hint.textContent='Write your paragraph here. You can review all your sentences before submitting.';hint.style.cssText='font-size:14px;color:#475569;';
                     el.append(prompt,hint);
-                    el.innerHTML+=`<textarea id="${f.id}" aria-label="إجابة نصية طويلة" placeholder="ابدأ الكتابة هنا... اكتب جملك السبع ثم راجعها." style="box-sizing:border-box;display:block;width:100%;min-height:285px;flex:1;border:1px solid #94a3b8;border-radius:10px;background:#f8fafc;resize:vertical;outline:none;padding:14px;font-size:18px;line-height:1.9;direction:ltr;text-align:left;white-space:pre-wrap;"></textarea><div style="font-size:13px;color:#64748b;text-align:left">يمكنك التمرير داخل الإجابة ومراجعتها وتعديلها قبل الإرسال.</div>`;
+                    el.innerHTML+=`<textarea id="${f.id}" aria-label="Long written answer" placeholder="Start writing here... Write your seven sentences, then review them." style="box-sizing:border-box;display:block;width:100%;min-height:285px;flex:1;border:1px solid #94a3b8;border-radius:10px;background:#f8fafc;resize:vertical;outline:none;padding:14px;font-size:18px;line-height:1.9;direction:ltr;text-align:left;white-space:pre-wrap;"></textarea><div style="font-size:13px;color:#64748b;text-align:left">You can scroll through your answer, review it, and make changes before submitting.</div>`;
                     longAnswers.appendChild(el);
                 }else{
                     el.style.cssText=`position:absolute;box-sizing:border-box;background:#fef08a;border:2px dashed #ca8a04;border-radius:5px;display:flex;align-items:center;justify-content:center;left:${f.x}%;top:${f.y}%;width:${fieldWidth};height:${fieldHeight};max-width:100%;overflow:hidden;`;
@@ -487,13 +487,13 @@ window.startStudentWorksheet = async function() {
         img.onerror=()=>{
             stopStudentWorksheetTimer();document.getElementById('stWorkspace').style.display='none';document.getElementById('stSubmitArea').style.display='none';document.getElementById('stInfoForm').style.display='block';
             document.getElementById('stTitle').innerText='❌ تعذر عرض الصورة. تحقق من رابط الصورة وصلاحيات Firebase Storage.';
-            alert('تعذر تحميل صورة الورقة. قد يكون رابط Firebase Storage غير صالح أو لا يسمح بالوصول.');
+            alert('Could not load the worksheet image. The Firebase Storage link may be invalid or inaccessible.');
         };
         img.src=window.currentStudentWorksheet.imageUrl;
     } catch(error) {
         console.error('Student worksheet start error:',error);
-        alert(error.message||'تعذر بدء الاختبار.');
-        if(startBtn){startBtn.disabled=false;startBtn.textContent='🚀 ابدأ الإجابة';}
+        alert(error.message||'Could not start the worksheet.');
+        if(startBtn){startBtn.disabled=false;startBtn.textContent='🚀 Start Worksheet';}
     }
 };
 
@@ -501,11 +501,11 @@ window.showMyHomeworkResults = async function(){
  const cls=document.getElementById('stClass').value, name=document.getElementById('stName').value;
  const pin=(document.getElementById('stPin')&&document.getElementById('stPin').value||'').trim();
  const box=document.getElementById('myHomeworkResults'); box.style.display='block';
- if(!cls||!name){box.innerHTML='<b style="color:#b91c1c">اختر الصف واسمك أولاً لعرض نتائجك.</b>';return;}
+ if(!cls||!name){box.innerHTML='<b style="color:#b91c1c">Select your class and name first to view your results.</b>';return;}
  if(!/^\d{4}$/.test(pin)){box.innerHTML='<b style="color:#b91c1c">أدخل رقمك السري المكوّن من أربعة أرقام للتحقق من هويتك.</b>';return;}
  box.innerHTML='⏳ جارٍ التحقق من هويتك وتحميل نتائجك...';
  try{
-  // لا نعتمد على جلسة فتح ورقة العمل؛ يمكن للطالب التحقق مباشرة عند طلب عرض النتائج.
+  // لا نعتمد على جلسة فتح Worksheet؛ يمكن للطالب التحقق مباشرة عند طلب عرض النتائج.
   let identity=window.currentStudentIdentity;
   if(!identity||identity.studentClass!==cls||identity.studentName!==name||identity.pinHash!==await homeworkSha256(identity.studentKey+'|'+pin)){
     const schoolId=String((window.currentStudentWorksheet&&window.currentStudentWorksheet.schoolId)||'global');
@@ -518,7 +518,7 @@ window.showMyHomeworkResults = async function(){
   window.currentStudentIdentity=identity;
   const items=(response&&response.data&&Array.isArray(response.data.results))?response.data.results:[];
   if(!items.length){box.innerHTML='<b>لا توجد نتائج منشورة لك حتى الآن.</b>';return;}
-  box.innerHTML='<h3 style="margin-top:0;color:#0f766e">نتائجك المعتمدة</h3>'+items.map(x=>'<div style="padding:9px;margin:7px 0;background:white;border-radius:8px;border:1px solid #99f6e4"><b>'+safeStudentResult(x.worksheetTitle)+'</b><div>الدرجة: <b>'+Number(x.score||0)+' / '+Number(x.maxScore||0)+'</b></div><div style="color:#047857;font-weight:bold">✔ تمت إضافة النقاط إلى رصيدك</div></div>').join('');
+  box.innerHTML='<h3 style="margin-top:0;color:#0f766e">Your Verified Results</h3>'+items.map(x=>'<div style="padding:9px;margin:7px 0;background:white;border-radius:8px;border:1px solid #99f6e4"><b>'+safeStudentResult(x.worksheetTitle)+'</b><div>Score: <b>'+Number(x.score||0)+' / '+Number(x.maxScore||0)+'</b></div><div style="color:#047857;font-weight:bold">✔ Points have been added to your balance</div></div>').join('');
  }catch(e){box.innerHTML='<span style="color:#b91c1c">تعذر تحميل النتائج: '+safeStudentResult(e.message||e)+'</span>';}
 };
 function safeStudentResult(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -550,7 +550,7 @@ window.showStudentHomeworkHonorBoard = async function(period) {
   if (!box) return;
   box.style.display = 'block';
   if (!cls || !name) {
-    box.innerHTML = '<b style="color:#b91c1c">اختر الصف واسمك أولاً.</b>';
+    box.innerHTML = '<b style="color:#b91c1c">Select your class and name first.</b>';
     return;
   }
   if (!/^\d{4}$/.test(pin) && !window.currentStudentIdentity?.pinHash) {
@@ -594,8 +594,8 @@ window.showStudentHomeworkHonorBoard = async function(period) {
       ${students.length ? students.map((s,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:10px;margin:7px 0;background:${i===0?'#fef3c7':'white'};border:1px solid ${i===0?'#f59e0b':'#fde68a'};border-radius:12px">
         <span style="font-size:25px;min-width:32px;text-align:center">${medals[i]||(''+(i+1))}</span>
         <b style="flex:1">${safeStudentResult(s.name)}</b>
-        <strong style="color:#92400e">${Number(s.points||0)} نقطة</strong>
-      </div>`).join('') : '<div style="text-align:center;padding:16px;background:white;border-radius:12px">لا توجد نقاط واجبات منزلية مسجلة لهذه الفترة حتى الآن.</div>'}
+        <strong style="color:#92400e">${Number(s.points||0)} points</strong>
+      </div>`).join('') : '<div style="text-align:center;padding:16px;background:white;border-radius:12px">No homework points have been recorded for this period yet.</div>'}
     `;
   } catch (error) {
     box.innerHTML = '<span style="color:#b91c1c">تعذر تحميل لوحة الشرف: '+safeStudentResult(error.message || error)+'</span>';
@@ -607,7 +607,7 @@ window.submitStudentAnswers = async function(autoSubmit=false) {
     if(!identity||!identity.studentKey||!identity.pinHash||!window.currentStudentAttemptId){alert('انتهت جلسة التحقق. ارجع وأدخل الصف والاسم والرقم السري مرة أخرى.');return;}
     const btn=document.querySelector('#stSubmitArea button');
     const fields=Array.isArray(window.currentStudentWorksheet&&window.currentStudentWorksheet.fields)?window.currentStudentWorksheet.fields:[];
-    if(!fields.length){alert('لا يمكن إرسال الواجب؛ لم يتم تحميل أسئلته بشكل صحيح.');return;}
+    if(!fields.length){alert('The worksheet cannot be submitted because its questions did not load correctly.');return;}
     const answers={},unanswered=[];
     fields.forEach((f,index)=>{
         const input=document.getElementById(f.id);const value=input?String(input.value==null?'':input.value).trim():'';
@@ -615,10 +615,10 @@ window.submitStudentAnswers = async function(autoSubmit=false) {
         if(!value)unanswered.push(index+1);
     });
     if(unanswered.length&&!autoSubmit&&!window.__worksheetTimeExpired){
-        alert('أكمل الإجابة عن جميع الأسئلة أولاً. الأسئلة غير المجابة: '+unanswered.join('، '));
+        alert('Please answer all questions first. Unanswered questions: '+unanswered.join('، '));
         const first=document.getElementById(fields[unanswered[0]-1].id);if(first)first.focus();return;
     }
-    if(btn){btn.disabled=true;btn.textContent=autoSubmit?'⏳ انتهى الوقت، جارٍ التسليم...':'⏳ جارٍ إرسال الإجابات...';}
+    if(btn){btn.disabled=true;btn.textContent=autoSubmit?'⏳ Time is up. Submitting...':'⏳ Submitting answers...';}
     try{
         const callable=firebase.app().functions('us-central1').httpsCallable('submitStudentWorksheetAnswers');
         const response=await callable({
@@ -634,8 +634,8 @@ window.submitStudentAnswers = async function(autoSubmit=false) {
         // The student returns to the link after the teacher reopens the worksheet.
     }catch(error){
         console.error('Student answers submit error:',error);
-        alert(error.message||'تعذر إرسال الإجابات.');
-        if(btn){btn.disabled=false;btn.textContent='✅ إرسال الإجابات';}
+        alert(error.message||'Could not submit your answers.');
+        if(btn){btn.disabled=false;btn.textContent='✅ Submit Answers';}
     }
 }
 
@@ -662,7 +662,7 @@ async function dailyChallengeIdentity(){
  const cls=String(document.getElementById("stClass")?.value||"").trim();
  const name=String(document.getElementById("stName")?.value||"").trim();
  const pin=String(document.getElementById("stPin")?.value||"").trim();
- if(!cls||!name)throw new Error("اختر الصف واسمك أولاً.");
+ if(!cls||!name)throw new Error("Select your class and name first.");
  if(!/^\d{4}$/.test(pin))throw new Error("أدخل رقمك السري المكوّن من أربعة أرقام.");
  const schoolId=dailyChallengeSchoolId();
  const studentKey=await homeworkSha256(schoolId+"|"+cls+"|"+homeworkNormalizeName(name));
@@ -739,7 +739,7 @@ function dailyChallengeRenderIntro(data){
  const c=data.challenge||{};
  host.appendChild(dailyChallengeNode("div",c.title||"تحدي اليوم"));
  host.lastChild.style.cssText="font-size:20px;font-weight:900;color:#9a3412;margin-bottom:8px";
- host.appendChild(dailyChallengeNode("p","التحدي جاهز! أمامك "+Number(c.durationSeconds||60)+" ثانية. يمكنك الحصول على ما يصل إلى "+Number(c.rewardPoints||0)+" نقطة بحسب إجاباتك الصحيحة."));
+ host.appendChild(dailyChallengeNode("p","التحدي جاهز! أمامك "+Number(c.durationSeconds||60)+" ثانية. يمكنك الحصول على ما يصل إلى "+Number(c.rewardPoints||0)+" points بحسب إجاباتك الصحيحة."));
  const btn=dailyChallengeNode("button","🚀 ابدأ التحدي الآن");
  btn.className="action-btn primary";btn.style.cssText="width:100%;background:linear-gradient(135deg,#ea580c,#f59e0b)";
  btn.onclick=()=>startDailyChallenge();
@@ -833,7 +833,7 @@ function dailyChallengeRenderResult(result,challenge){
   const note=dailyChallengeNode("div","موضوعك المكوّن من سبع جمل وصل إلى المعلم للمراجعة. ستُضاف النقاط إلى رصيدك بعد اعتماد التقييم.");note.style.cssText="padding:14px;background:#fff7ed;border-radius:12px;line-height:1.9;text-align:center;margin:12px 0;";host.appendChild(note);
  }else{const correct=result.correct===true,awarded=Number(result.awardedPoints||0),maximum=Number(result.maxPoints||challenge?.rewardPoints||0);
   const title=dailyChallengeNode("h3",correct?"🎉 إجابة صحيحة! أحسنت يا بطل":awarded>0?"👏 إجابة جيدة! حصلت على نقاط":"💪 محاولة رائعة! حاول غدًا");title.style.cssText="color:"+(awarded>0?"#15803d":"#b45309")+";text-align:center;font-size:22px";host.appendChild(title);
-  const scoreText=awarded>0?"حصلت على "+awarded+" من "+maximum+" نقطة 🏆":"لم تحصل على نقاط هذه المرة، لكن التعلم مكسب!";
+  const scoreText=awarded>0?"حصلت على "+awarded+" من "+maximum+" points 🏆":"لم تحصل على نقاط هذه المرة، لكن التعلم مكسب!";
   const score=dailyChallengeNode("div",scoreText);score.style.cssText="text-align:center;font-weight:bold;padding:12px;background:#fff;border-radius:12px;margin:10px 0";host.appendChild(score);
  }
  const explanation=String(result.explanation||challenge?.explanation||"");if(explanation){const note=dailyChallengeNode("p","💡 "+explanation);note.style.cssText="line-height:1.8;color:#475569";host.appendChild(note);}
@@ -847,7 +847,7 @@ async function questionHunterResolveIdentity(){
  const cls=String(document.getElementById("stClass")?.value||"").trim();
  const name=String(document.getElementById("stName")?.value||"").trim();
  const pin=String(document.getElementById("stPin")?.value||"").trim();
- if(!cls||!name)throw new Error("اختر الصف واسمك أولاً.");
+ if(!cls||!name)throw new Error("Select your class and name first.");
  if(!/^\\d{4}$/.test(pin))throw new Error("أدخل الرقم السري المكوّن من أربعة أرقام.");
  const response=await firebase.app().functions("us-central1").httpsCallable("getQuestionHunterStudentAvailability")({
   studentClass:cls,studentName:name,pin
@@ -1231,7 +1231,7 @@ function questionHunterRenderFeedback(result){
 function questionHunterRenderCompleted(result){
  const host=document.getElementById("questionHunterContent");host.replaceChildren();
  const title=dailyChallengeNode("h2","🏆 انتهت لعبة صائد الأسئلة!");title.style.cssText="text-align:center;color:#0369a1;font-size:24px;";host.appendChild(title);
- const score=dailyChallengeNode("div","نتيجتك: "+Number(result.score||0)+" نقطة");score.style.cssText="font-size:24px;font-weight:900;color:#15803d;background:#fff;padding:22px;border-radius:16px;text-align:center;margin:14px 0;";host.appendChild(score);
+ const score=dailyChallengeNode("div","نتيجتك: "+Number(result.score||0)+" points");score.style.cssText="font-size:24px;font-weight:900;color:#15803d;background:#fff;padding:22px;border-radius:16px;text-align:center;margin:14px 0;";host.appendChild(score);
  const detail=dailyChallengeNode("p","الإجابات الصحيحة: "+Number(result.correctAnswers||0)+" من "+Number(result.questionCount||5)+" | الجولات الفائتة: "+Number(result.missedShots||0)+". تمت إضافة النقاط المستحقة إلى رصيدك في نظام POINTS.");detail.style.cssText="text-align:center;line-height:1.9;";host.appendChild(detail);
  const close=dailyChallengeNode("button","العودة إلى بوابة الطالب");close.className="action-btn primary";close.style.width="100%";close.onclick=()=>closeQuestionHunter();host.appendChild(close);
 }
@@ -1255,7 +1255,7 @@ if ('serviceWorker' in navigator) {
   try{const identity=await dailyChallengeIdentity();const r=await firebase.app().functions("us-central1").httpsCallable("getGoldenQuestion")(identity);const d=r.data||{};
    if(!d.found){goldenQuestionMessage(d.message||"لا يوجد سؤال ذهبي منشور لفصلك اليوم.");return;}
    window.__goldenQuestionCurrent=d;
-   if(["pending_review","approved","rejected"].includes(d.attemptState)){goldenQuestionMessage(d.attemptState==="pending_review"?"✅ وصلت إجابتك إلى المعلم، وهي بانتظار المراجعة.":d.attemptState==="approved"?"🏆 تم اعتماد إجابتك وإضافة "+Number(d.attemptResult?.awardedPoints||0)+" نقطة إلى رصيدك.":"تمت مراجعة إجابتك ولم تُعتمد هذه المرة.");return;}
+   if(["pending_review","approved","rejected"].includes(d.attemptState)){goldenQuestionMessage(d.attemptState==="pending_review"?"✅ وصلت إجابتك إلى المعلم، وهي بانتظار المراجعة.":d.attemptState==="approved"?"🏆 تم اعتماد إجابتك وإضافة "+Number(d.attemptResult?.awardedPoints||0)+" points إلى رصيدك.":"تمت مراجعة إجابتك ولم تُعتمد هذه المرة.");return;}
    if(d.attemptState==="expired"){goldenQuestionMessage("انتهى وقت محاولتك.");return;}
    if(d.state==="upcoming"){goldenQuestionMessage("⏰ يفتح السؤال الذهبي في "+new Date(d.question.openAtMillis).toLocaleTimeString("ar-QA",{hour:"2-digit",minute:"2-digit"})+" بتوقيت قطر.");return;}
    if(d.state==="closed"){goldenQuestionMessage("انتهى وقت السؤال الذهبي لهذا اليوم.");return;}
@@ -1264,12 +1264,12 @@ if ('serviceWorker' in navigator) {
  }
  function goldenQuestionMessage(text){goldenQuestionClearTimer();const host=document.getElementById("goldenQuestionContent");host.replaceChildren();const box=dailyChallengeNode("div",text);box.style.cssText="padding:15px;background:#fff;border-radius:12px;text-align:center;font-weight:bold;line-height:1.9;color:#854d0e";host.appendChild(box);}
  function goldenQuestionIntro(d){const host=document.getElementById("goldenQuestionContent"),q=d.question||{};host.replaceChildren();
-  const info=dailyChallengeNode("div","🏆 يمكنك الحصول على "+Number(q.rewardPoints)+" نقطة بعد مراجعة المعلم. أمامك "+Number(q.durationSeconds)+" ثانية للإجابة.");info.style.cssText="padding:13px;background:#fff7d6;border-radius:12px;text-align:center;font-weight:bold;color:#854d0e";host.appendChild(info);
+  const info=dailyChallengeNode("div","🏆 يمكنك الحصول على "+Number(q.rewardPoints)+" points بعد مراجعة المعلم. أمامك "+Number(q.durationSeconds)+" ثانية للإجابة.");info.style.cssText="padding:13px;background:#fff7d6;border-radius:12px;text-align:center;font-weight:bold;color:#854d0e";host.appendChild(info);
   const btn=dailyChallengeNode("button","🚀 ابدأ السؤال الذهبي");btn.className="action-btn";btn.style.cssText="width:100%;margin-top:12px;background:linear-gradient(135deg,#b8860b,#facc15);color:#422006";btn.onclick=startGoldenQuestion;host.appendChild(btn);
  }
  async function startGoldenQuestion(){
   if(studentActivitiesHolidayGuard()) return;try{const identity=window.__dailyChallengeIdentity||await dailyChallengeIdentity();const r=await firebase.app().functions("us-central1").httpsCallable("startGoldenQuestionAttempt")(identity);const d=r.data||{};
-  if(d.alreadySubmitted){goldenQuestionMessage(d.status==="pending_review"?"إجابتك بانتظار مراجعة المعلم.":d.status==="approved"?"تم اعتماد إجابتك وحصلت على "+Number(d.awardedPoints)+" نقطة.":"تمت مراجعة إجابتك.");return;}
+  if(d.alreadySubmitted){goldenQuestionMessage(d.status==="pending_review"?"إجابتك بانتظار مراجعة المعلم.":d.status==="approved"?"تم اعتماد إجابتك وحصلت على "+Number(d.awardedPoints)+" points.":"تمت مراجعة إجابتك.");return;}
   if(d.success!==true||!d.question)throw new Error("لم يؤكد الخادم بدء السؤال.");goldenQuestionRender(d.question,d.expiresAtMillis);
  }catch(e){goldenQuestionMessage(e.message||"تعذر بدء السؤال.");}}
  function goldenQuestionRender(q,expiresAt){goldenQuestionClearTimer();const host=document.getElementById("goldenQuestionContent");host.replaceChildren();
