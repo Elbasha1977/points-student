@@ -157,6 +157,10 @@ function enforceStudentHolidayView(){
     const panel=document.getElementById(id);
     if(panel) panel.style.display="none";
   });
+  ["dailyChallengeContent","goldenQuestionContent","questionHunterContent"].forEach(id=>{
+    const host=document.getElementById(id);
+    if(host) host.replaceChildren();
+  });
   if(typeof dailyChallengeClearTimer==="function") dailyChallengeClearTimer();
   if(typeof goldenQuestionClearTimer==="function") goldenQuestionClearTimer();
   if(typeof questionHunterStopTargetMotion==="function") questionHunterStopTargetMotion();
@@ -553,6 +557,7 @@ window.closeDailyChallenge=function(){
  document.getElementById("dailyChallengePanel").style.display="none";
 };
 window.loadDailyChallenge=async function(){
+  if(studentActivitiesHolidayGuard()) return;
  dailyChallengeClearTimer();
  const host=document.getElementById("dailyChallengeContent");
  host.textContent="⏳ جارٍ التحقق من بياناتك وتحميل تحدي اليوم...";
@@ -601,6 +606,7 @@ function dailyChallengeRenderIntro(data){
  host.appendChild(btn);
 }
 window.startDailyChallenge=async function(){
+  if(studentActivitiesHolidayGuard()) return;
  const host=document.getElementById("dailyChallengeContent");
  try{
   const identity=window.__dailyChallengeIdentity||await dailyChallengeIdentity();
@@ -783,6 +789,7 @@ window.openQuestionHunter=async function(){
 };
 window.closeQuestionHunter=function(){questionHunterStopTargetMotion();document.getElementById("questionHunterPanel").style.display="none";};
 window.loadQuestionHunter=async function(){
+ if(studentActivitiesHolidayGuard()) return;
  questionHunterMessage("⏳ جارٍ التحقق من بيانات الطالب وتحميل اللعبة...");
  try{
   const verified=await questionHunterResolveIdentity();
@@ -1119,6 +1126,7 @@ if ('serviceWorker' in navigator) {
  window.openGoldenQuestion=async function(){if(studentActivitiesHolidayGuard()) return;const panel=document.getElementById("goldenQuestionPanel");panel.style.display="block";panel.scrollIntoView({behavior:"smooth",block:"start"});await loadGoldenQuestion();};
  window.closeGoldenQuestion=function(){goldenQuestionClearTimer();document.getElementById("goldenQuestionPanel").style.display="none";};
  async function loadGoldenQuestion(){
+  if(studentActivitiesHolidayGuard()) return;
   goldenQuestionClearTimer();const host=document.getElementById("goldenQuestionContent");host.textContent="⏳ جارٍ تحميل السؤال الذهبي...";
   try{const identity=await dailyChallengeIdentity();const r=await firebase.app().functions("us-central1").httpsCallable("getGoldenQuestion")(identity);const d=r.data||{};
    if(!d.found){goldenQuestionMessage(d.message||"لا يوجد سؤال ذهبي منشور لفصلك اليوم.");return;}
@@ -1135,7 +1143,8 @@ if ('serviceWorker' in navigator) {
   const info=dailyChallengeNode("div","🏆 يمكنك الحصول على "+Number(q.rewardPoints)+" نقطة بعد مراجعة المعلم. أمامك "+Number(q.durationSeconds)+" ثانية للإجابة.");info.style.cssText="padding:13px;background:#fff7d6;border-radius:12px;text-align:center;font-weight:bold;color:#854d0e";host.appendChild(info);
   const btn=dailyChallengeNode("button","🚀 ابدأ السؤال الذهبي");btn.className="action-btn";btn.style.cssText="width:100%;margin-top:12px;background:linear-gradient(135deg,#b8860b,#facc15);color:#422006";btn.onclick=startGoldenQuestion;host.appendChild(btn);
  }
- async function startGoldenQuestion(){try{const identity=window.__dailyChallengeIdentity||await dailyChallengeIdentity();const r=await firebase.app().functions("us-central1").httpsCallable("startGoldenQuestionAttempt")(identity);const d=r.data||{};
+ async function startGoldenQuestion(){
+  if(studentActivitiesHolidayGuard()) return;try{const identity=window.__dailyChallengeIdentity||await dailyChallengeIdentity();const r=await firebase.app().functions("us-central1").httpsCallable("startGoldenQuestionAttempt")(identity);const d=r.data||{};
   if(d.alreadySubmitted){goldenQuestionMessage(d.status==="pending_review"?"إجابتك بانتظار مراجعة المعلم.":d.status==="approved"?"تم اعتماد إجابتك وحصلت على "+Number(d.awardedPoints)+" نقطة.":"تمت مراجعة إجابتك.");return;}
   if(d.success!==true||!d.question)throw new Error("لم يؤكد الخادم بدء السؤال.");goldenQuestionRender(d.question,d.expiresAtMillis);
  }catch(e){goldenQuestionMessage(e.message||"تعذر بدء السؤال.");}}
