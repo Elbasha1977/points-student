@@ -153,7 +153,7 @@ function makeCard(f,i){
 const c=el('section','card');if(f.context)c.append(el('div','context',f.context));
 const p=el('div','prompt');p.append(document.createTextNode((i+1)+'. '));
 const prompt=String(f.prompt||'');
-const markerMatch=prompt.match(/\\(Correct the (?:verb|word|pronoun)\\)/i);
+const markerMatch=prompt.match(/\(Correct the (?:verb|word|pronoun)\)/i);
 let target='';
 if(/How many coffee/i.test(prompt))target='many';
 else if(/How much apples/i.test(prompt))target='much';
