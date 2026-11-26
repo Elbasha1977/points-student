@@ -35,6 +35,28 @@ body{margin:0;background:linear-gradient(135deg,#dbeafe,#c7d2fe);padding:14px;mi
 
 @keyframes qhunterFloat{0%{transform:translate(-34px,-10px) rotate(-7deg)}50%{transform:translate(34px,7px) rotate(7deg)}100%{transform:translate(-20px,12px) rotate(-5deg)}}
 @media(prefers-reduced-motion:reduce){#questionHunterPanel *{animation:none!important;transition:none!important}}
+
+/* نافذة إجازة الطالب */
+#studentHolidayModal{display:none;position:fixed;inset:0;z-index:999999;align-items:center;justify-content:center;padding:18px;direction:rtl}
+#studentHolidayModal .student-holiday-backdrop{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(15,23,42,.72);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
+#studentHolidayModal .student-holiday-card{position:relative;overflow:hidden;width:min(680px,96vw);max-height:92vh;overflow-y:auto;text-align:center;padding:clamp(22px,5vw,42px);border:5px solid #fff;border-radius:32px;background:linear-gradient(145deg,#fff7ad 0%,#fff 38%,#d9f7ff 100%);box-shadow:0 24px 80px rgba(0,0,0,.38);animation:studentHolidayPop .35s ease-out}
+#studentHolidayModal .student-holiday-card:before,#studentHolidayModal .student-holiday-card:after{content:"";position:absolute;border-radius:50%;pointer-events:none;opacity:.22}
+#studentHolidayModal .student-holiday-card:before{width:190px;height:190px;background:#facc15;top:-105px;right:-65px}
+#studentHolidayModal .student-holiday-card:after{width:160px;height:160px;background:#38bdf8;bottom:-95px;left:-55px}
+#studentHolidayModal .student-holiday-sparkles{position:relative;font-size:24px;margin-bottom:6px}
+#studentHolidayModal .student-holiday-icon{position:relative;font-size:clamp(42px,8vw,68px);line-height:1.25;margin:4px 0 10px}
+#studentHolidayModal .student-holiday-ribbon{position:relative;display:inline-block;padding:8px 22px;border-radius:999px;background:linear-gradient(90deg,#f97316,#facc15);color:#713f12;font-size:16px;font-weight:900;box-shadow:0 4px 12px #f59e0b55}
+#studentHolidayModal h2{position:relative;margin:17px 0 10px;color:#1d4ed8;font-size:clamp(26px,5vw,38px);font-weight:900;line-height:1.4}
+#studentHolidayModal .student-holiday-greeting{position:relative;margin:8px 0;color:#0f766e;font-size:22px;font-weight:900}
+#studentHolidayModal .student-holiday-message{position:relative;margin:12px 0;padding:18px 20px;border-radius:20px;background:rgba(255,255,255,.88);color:#334155;font-size:clamp(17px,3vw,21px);font-weight:700;line-height:2}
+#studentHolidayModal .student-holiday-note{position:relative;margin:12px 0;padding:12px;border-radius:16px;background:#dcfce7;color:#166534;font-size:17px;font-weight:800;line-height:1.8}
+#studentHolidayModal .student-holiday-footer{position:relative;margin:14px 0;color:#7c3aed;font-size:clamp(18px,3vw,23px);font-weight:900;line-height:1.7}
+#studentHolidayModal .student-holiday-close{position:relative;margin-top:8px;padding:14px 30px;border:0;border-radius:16px;background:linear-gradient(100deg,#0f766e,#14b8a6);color:white;font-size:19px;font-weight:900;cursor:pointer;box-shadow:0 7px 18px #0f766e44}
+#studentHolidayModal .student-holiday-close:active{transform:scale(.98)}
+@keyframes studentHolidayPop{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(max-width:480px){#studentHolidayModal{padding:8px}#studentHolidayModal .student-holiday-backdrop{padding:8px}#studentHolidayModal .student-holiday-card{border-radius:24px;padding:20px 16px}}
+@media(prefers-reduced-motion:reduce){#studentHolidayModal .student-holiday-card{animation:none}}
+
 </style>
 </head>
 <body>
@@ -111,13 +133,22 @@ function studentActivitiesAreOnHoliday(){
   return ["Thu","Fri","Sat"].includes(weekday);
 }
 function studentActivitiesHolidayMessage(){
-  return "🌿 إجازة سعيدة يا طلابي الأعزاء!\\n\\nاليوم إجازة لكم، فلا يوجد واجب ولا تحدٍّ ولا سؤال ذهبي ولا ألعاب مطلوبة منكم.\\nاستمتعوا بوقتكم، وارتاحوا، واقضوا عطلة جميلة مع أسرتكم. نلقاكم بكل نشاط يوم الأحد بإذن الله! 💙";
+  return "اليوم إجازة لكم؛ لا يوجد واجب ولا تحدٍّ ولا سؤال ذهبي ولا ألعاب مطلوبة منكم. استمتعوا بوقتكم، وارتاحوا، واقضوا عطلة جميلة مع أسرتكم. نلقاكم بكل نشاط وحماس يوم الأحد بإذن الله!";
+}
+function showStudentHolidayModal(){
+  let modal=document.getElementById("studentHolidayModal");
+  if(!modal){
+    modal=document.createElement("div");
+    modal.id="studentHolidayModal";
+    modal.innerHTML = '<div class="student-holiday-backdrop" data-holiday-close="1"><section class="student-holiday-card" role="dialog" aria-modal="true" aria-labelledby="studentHolidayTitle" dir="rtl"><div class="student-holiday-sparkles">✨　🌈　✨</div><div class="student-holiday-icon">🌴☀️🌴</div><div class="student-holiday-ribbon">وقت الراحة والمرح!</div><h2 id="studentHolidayTitle">إجازة سعيدة يا أبطالنا! 💙</h2><p class="student-holiday-greeting">طلابي الأعزاء،</p><p class="student-holiday-message">' + studentActivitiesHolidayMessage() + '</p><div class="student-holiday-note">استمتعوا بعطلتكم، العبوا، اقرأوا، وابتسموا كثيرًا 😊</div><div class="student-holiday-footer">ننتظركم يوم الأحد بكل نشاط وحماس! 🚀</div><button type="button" class="student-holiday-close" data-holiday-close="1">شكرًا يا أستاذي 💚</button></section></div>';
+    document.body.appendChild(modal);
+    modal.addEventListener("click",event=>{if(event.target.closest("[data-holiday-close]")) modal.style.display="none";});
+    document.addEventListener("keydown",event=>{if(event.key==="Escape" && modal.style.display==="flex") modal.style.display="none";});
+  }
+  modal.style.display="flex";
 }
 function studentActivitiesHolidayGuard(){
-  if(studentActivitiesAreOnHoliday()){
-    alert(studentActivitiesHolidayMessage());
-    return true;
-  }
+  if(studentActivitiesAreOnHoliday()){showStudentHolidayModal();return true;}
   return false;
 }
 function enforceStudentHolidayView(){
