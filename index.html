@@ -343,6 +343,96 @@ window.startStudentWorksheet = async function() {
                     host.appendChild(heading);
                     lastSection = field.section;
                 }
+                if (field.type === 'line_match') {
+                    if (renderedDragTasks.has(field.matchGroup)) return;
+                    renderedDragTasks.add(field.matchGroup);
+                    const groupFields=fields.filter(x=>x.type==='line_match'&&x.matchGroup===field.matchGroup);
+                    const card=document.createElement('section');
+                    card.style.cssText='position:relative;padding:16px;background:#fff;border:2px solid #93c5fd;border-radius:14px;overflow:hidden;';
+                    const title=document.createElement('h4');title.textContent='Match each question with the correct answer';title.style.cssText='margin:0 0 12px;color:#1e3a8a;';card.appendChild(title);
+                    const cols=document.createElement('div');cols.style.cssText='display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;position:relative;z-index:2;';
+                    const left=document.createElement('div'),right=document.createElement('div');
+                    left.style.cssText='display:flex;flex-direction:column;gap:12px;';right.style.cssText='display:flex;flex-direction:column;gap:12px;';
+                    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;overflow:visible;';
+                    const colors=['#e11d48','#2563eb','#16a34a','#9333ea','#d97706','#0891b2','#be123c'];
+                    let selected=null;const used=new Set();const pairs=new Map();
+                    const hiddenInputs=[];
+                    groupFields.forEach((item,i)=>{
+                      const h=document.createElement('input');h.type='hidden';h.id=item.id;host.appendChild(h);hiddenInputs.push(h);
+                      const q=document.createElement('button');q.type='button';q.textContent=item.prompt;q.style.cssText='text-align:left;direction:ltr;padding:12px;border:2px solid #bfdbfe;border-radius:10px;background:#eff6ff;min-height:54px;cursor:pointer;position:relative;z-index:2;';
+                      q.addEventListener('click',()=>{selected=item.id;left.querySelectorAll('button').forEach(x=>x.style.outline='none');q.style.outline='3px solid #2563eb';});
+                      q.dataset.matchId=item.id;left.appendChild(q);
+                    });
+                    const options=(groupFields[0].matchOptions||[]).slice();
+                    options.forEach((opt,i)=>{
+                      const b=document.createElement('button');b.type='button';b.textContent=String(opt.label||opt.value);b.dataset.answer=String(opt.value);
+                      b.style.cssText='text-align:left;direction:ltr;padding:12px;border:2px solid #bbf7d0;border-radius:10px;background:#f0fdf4;min-height:54px;cursor:pointer;position:relative;z-index:2;';
+                      b.addEventListener('click',()=>{
+                        if(!selected){alert('Select a question on the left first.');return;}
+                        const prior=[...pairs.entries()].find(([k,v])=>v===String(opt.value));if(prior)pairs.delete(prior[0]);
+                        pairs.set(selected,String(opt.value));hiddenInputs.forEach(h=>h.value=pairs.get(h.id)||'');
+                        used.clear();pairs.forEach(v=>used.add(v));
+                        right.querySelectorAll('button').forEach(x=>{x.disabled=used.has(x.dataset.answer)&&x.dataset.answer!==String(opt.value);x.style.opacity=x.disabled?'.45':'1';});
+                        left.querySelectorAll('button').forEach(x=>x.style.outline='none');selected=null;
+                        drawLines();
+                      });
+                      right.appendChild(b);
+                    });
+                    cols.append(left,right);card.append(svg,cols);
+                    function drawLines(){
+                      svg.replaceChildren();const rect=card.getBoundingClientRect();svg.setAttribute('viewBox','0 0 '+rect.width+' '+rect.height);
+                      pairs.forEach((answer,id)=>{
+                        const q=left.querySelector('[data-match-id="'+id+'"]'),a=[...right.querySelectorAll('button')].find(x=>x.dataset.answer===answer);
+                        if(!q||!a)return;const qr=q.getBoundingClientRect(),ar=a.getBoundingClientRect();
+                        const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+                        line.setAttribute('x1',qr.right-rect.left);line.setAttribute('y1',qr.top+qr.height/2-rect.top);
+                        line.setAttribute('x2',ar.left-rect.left);line.setAttribute('y2',ar.top+ar.height/2-rect.top);
+                        line.setAttribute('stroke',colors[groupFields.findIndex(x=>x.id===id)%colors.length]);line.setAttribute('stroke-width','4');line.setAttribute('stroke-linecap','round');svg.appendChild(line);
+                      });
+                    }
+                    host.appendChild(card);setTimeout(drawLines,0);window.addEventListener('resize',drawLines);
+                    return;
+                }
+                if (field.type === 'fill_blank') {
+                    if (renderedDragTasks.has(field.fillGroup)) return;
+                    renderedDragTasks.add(field.fillGroup);
+                    const taskFields=fields.filter(x=>x.type==='fill_blank'&&x.fillGroup===field.fillGroup);
+                    const card=document.createElement('section');card.style.cssText='padding:16px;background:#fff;border:2px solid #93c5fd;border-radius:14px;';
+                    const heading=document.createElement('h4');heading.textContent='Drag the suitable words into the gaps';heading.style.cssText='margin:0 0 12px;color:#1e3a8a;';card.appendChild(heading);
+                    const bank=document.createElement('div');bank.style.cssText='display:flex;flex-wrap:wrap;gap:9px;padding:12px;background:#eff6ff;border-radius:10px;margin-bottom:14px;';
+                    const sentenceList=document.createElement('div');sentenceList.style.cssText='display:flex;flex-direction:column;gap:12px;';
+                    const wordButtons=new Map();let selectedWord=null;
+                    const available=(field.wordBank||[]).slice();
+                    available.forEach((word,i)=>{
+                      const b=document.createElement('button');b.type='button';b.textContent=String(word.label||word.value);b.draggable=true;b.dataset.word=String(word.value);
+                      b.style.cssText='padding:10px 15px;border:2px solid #93c5fd;border-radius:10px;background:#dbeafe;color:#1e3a8a;font-weight:800;cursor:grab;';
+                      b.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',String(word.value)));
+                      b.addEventListener('click',()=>{selectedWord=String(word.value);bank.querySelectorAll('button').forEach(x=>x.style.outline='none');b.style.outline='3px solid #2563eb';});
+                      bank.appendChild(b);wordButtons.set(String(word.value),b);
+                    });
+                    taskFields.forEach((item,i)=>{
+                      const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px;border-bottom:1px solid #e2e8f0;';
+                      const prompt=document.createElement('span');prompt.textContent=item.prompt;prompt.style.cssText='flex:1;min-width:220px;direction:ltr;text-align:left;';
+                      const slot=document.createElement('button');slot.type='button';slot.textContent='Drop a word here';slot.dataset.fieldId=item.id;slot.style.cssText='min-width:130px;min-height:42px;padding:8px 12px;border:2px dashed #60a5fa;border-radius:9px;background:#f8fbff;color:#64748b;';
+                      const hidden=document.createElement('input');hidden.type='hidden';hidden.id=item.id;host.appendChild(hidden);
+                      function placeWord(value){
+                        if(!value)return;
+                        const other=taskFields.find(x=>x.id!==item.id&&document.getElementById(x.id)?.value===value);
+                        if(other){const old=document.querySelector('[data-field-id="'+other.id+'"]');if(old){old.textContent='Drop a word here';old.style.background='#f8fbff';}document.getElementById(other.id).value='';}
+                        const oldValue=hidden.value;if(oldValue&&wordButtons.has(oldValue)){wordButtons.get(oldValue).disabled=false;wordButtons.get(oldValue).style.opacity='1';}
+                        hidden.value=value;slot.textContent=value;slot.style.background='#dcfce7';slot.style.borderStyle='solid';
+                        if(wordButtons.has(value)){wordButtons.get(value).disabled=true;wordButtons.get(value).style.opacity='.4';}
+                        selectedWord=null;bank.querySelectorAll('button').forEach(x=>x.style.outline='none');
+                      }
+                      slot.addEventListener('dragover',e=>{e.preventDefault();slot.style.background='#dbeafe';});
+                      slot.addEventListener('drop',e=>{e.preventDefault();placeWord(e.dataTransfer.getData('text/plain'));});
+                      slot.addEventListener('click',()=>{if(selectedWord)placeWord(selectedWord);});
+                      row.append(prompt,slot);sentenceList.appendChild(row);
+                    });
+                    card.append(bank,sentenceList);
+                    const hint=document.createElement('small');hint.textContent='On a touch screen, tap a word and then tap its gap.';hint.style.cssText='display:block;margin-top:10px;color:#64748b;';card.appendChild(hint);
+                    host.appendChild(card);return;
+                }
                 if (field.type === 'drag_order') {
                     if (renderedDragTasks.has(field.taskId)) return;
                     renderedDragTasks.add(field.taskId);
@@ -354,7 +444,7 @@ window.startStudentWorksheet = async function() {
                     taskTitle.style.cssText = 'font-size:17px;line-height:1.8;color:#1e3a8a;margin:0 0 12px;';
                     taskCard.appendChild(taskTitle);
                     const slots = document.createElement('div');
-                    slots.style.cssText = 'display:grid;gap:9px;margin:12px 0;';
+                    slots.style.cssText = 'display:flex;flex-wrap:wrap;gap:9px;margin:12px 0;align-items:stretch;';
                     function placeSentence(fieldId,slot) {
                         if (!fieldId) return;
                         const hidden = document.getElementById(fieldId);
@@ -386,7 +476,7 @@ window.startStudentWorksheet = async function() {
                     for(let pos=1;pos<=taskFields.length;pos++){
                         const slot=document.createElement('div');
                         slot.dataset.position=String(pos);slot.dataset.fieldId='';
-                        slot.style.cssText='display:flex;gap:10px;align-items:center;min-height:54px;padding:10px 12px;border:2px dashed #93c5fd;border-radius:10px;background:#f8fbff;';
+                        slot.style.cssText='display:flex;flex:1 1 240px;max-width:100%;box-sizing:border-box;gap:10px;align-items:center;min-height:58px;padding:10px 12px;border:2px dashed #93c5fd;border-radius:10px;background:#f8fbff;';
                         const number=document.createElement('b');number.textContent=pos+'.';number.style.cssText='color:#1d4ed8;min-width:24px;';
                         const text=document.createElement('span');text.className='drop-text';text.textContent='Drop a sentence here';text.style.cssText='flex:1;color:#64748b;text-align:left;direction:ltr;';
                         slot.append(number,text);
@@ -396,7 +486,6 @@ window.startStudentWorksheet = async function() {
                         slot.addEventListener('click',()=>{if(selectedDragCard)placeSentence(selectedDragCard,slot);});
                         slots.appendChild(slot);
                     }
-                    taskCard.appendChild(slots);
                     const bankLabel=document.createElement('div');bankLabel.textContent='Sentence cards — drag and drop';bankLabel.style.cssText='font-weight:800;color:#1e40af;margin:14px 0 8px;';
                     taskCard.appendChild(bankLabel);
                     const bank=document.createElement('div');bank.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px;';
@@ -410,6 +499,7 @@ window.startStudentWorksheet = async function() {
                         bank.appendChild(sentence);
                     });
                     taskCard.appendChild(bank);
+                    taskCard.appendChild(slots);
                     const hint=document.createElement('small');hint.textContent='On a touch screen: tap a sentence card, then tap its destination slot.';hint.style.cssText='display:block;color:#64748b;margin-top:10px;';
                     taskCard.appendChild(hint);
                     host.appendChild(taskCard);
