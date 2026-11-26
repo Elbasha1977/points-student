@@ -104,6 +104,32 @@ const firebaseConfig = {
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const firestoreDb = firebase.firestore();
 
+// ==================== أيام إجازة الأنشطة الأسبوعية ====================
+// الأنشطة متاحة من الأحد إلى الأربعاء بتوقيت قطر فقط.
+function studentActivitiesHolidayGuard(){
+  const weekday = new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Qatar",weekday:"short"}).format(new Date());
+  if(["Thu","Fri","Sat"].includes(weekday)){
+    alert("🌿 إجازة سعيدة يا طلابي الأعزاء!\n\nاليوم إجازة لكم، فلا يوجد واجب ولا تحدٍّ ولا سؤال ذهبي ولا ألعاب مطلوبة منكم.\nاستمتعوا بوقتكم، وارتاحوا، واقضوا عطلة جميلة مع أسرتكم. نلقاكم بكل نشاط يوم الأحد بإذن الله! 💙");
+    return true;
+  }
+  return false;
+}
+document.addEventListener("click",function(event){
+  const button=event.target.closest("button");
+  if(!button)return;
+  const inRestrictedPanel=button.closest("#dailyChallengePanel,#goldenQuestionPanel,#questionHunterPanel");
+  const isCloseButton=/close(DailyChallenge|GoldenQuestion|QuestionHunter)/.test(button.getAttribute("onclick")||"");
+  const isHomeworkStart=button.id==="stStartBtn";
+  const isHomeworkSubmit=!!button.closest("#stSubmitArea") && !/showStudentHomeworkHonorBoard/.test(button.getAttribute("onclick")||"");
+  if((inRestrictedPanel&&!isCloseButton)||isHomeworkStart||isHomeworkSubmit){
+    if(studentActivitiesHolidayGuard()){
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  }
+},true);
+
+
 
 // ==================== محرك صفحة الطالب (مدمج) ====================
 // هذا الكود يجعل لوحة المدير تتحول إلى صفحة طالب إذا كان الرابط يحتوي على ?student
@@ -206,6 +232,7 @@ function runStudentWorksheetTimer(expiresAtMillis){
     tick();window.__worksheetTimerHandle=setInterval(tick,1000);
 }
 window.startStudentWorksheet = async function() {
+    if(studentActivitiesHolidayGuard()) return;
     const cls = document.getElementById('stClass').value;
     const name = document.getElementById('stName').value;
     const pin = (document.getElementById('stPin') && document.getElementById('stPin').value || '').trim();
@@ -466,6 +493,7 @@ function dailyChallengeShowMessage(text,isError){
  host.appendChild(box);
 }
 window.openDailyChallenge=async function(){
+ if(studentActivitiesHolidayGuard()) return;
  const panel=document.getElementById("dailyChallengePanel");
  panel.style.display="block";
  panel.scrollIntoView({behavior:"smooth",block:"start"});
@@ -700,6 +728,7 @@ function questionHunterMessage(text,isError=false){
  host.appendChild(box);
 }
 window.openQuestionHunter=async function(){
+ if(studentActivitiesHolidayGuard()) return;
  const panel=document.getElementById("questionHunterPanel");panel.style.display="block";panel.scrollIntoView({behavior:"smooth",block:"start"});
  await loadQuestionHunter();
 };
@@ -1038,7 +1067,7 @@ if ('serviceWorker' in navigator) {
  // ==================== Golden Question student experience ====================
  window.__goldenQuestionTimer=null;window.__goldenQuestionCurrent=null;
  function goldenQuestionClearTimer(){if(window.__goldenQuestionTimer){clearInterval(window.__goldenQuestionTimer);window.__goldenQuestionTimer=null;}}
- window.openGoldenQuestion=async function(){const panel=document.getElementById("goldenQuestionPanel");panel.style.display="block";panel.scrollIntoView({behavior:"smooth",block:"start"});await loadGoldenQuestion();};
+ window.openGoldenQuestion=async function(){if(studentActivitiesHolidayGuard()) return;const panel=document.getElementById("goldenQuestionPanel");panel.style.display="block";panel.scrollIntoView({behavior:"smooth",block:"start"});await loadGoldenQuestion();};
  window.closeGoldenQuestion=function(){goldenQuestionClearTimer();document.getElementById("goldenQuestionPanel").style.display="none";};
  async function loadGoldenQuestion(){
   goldenQuestionClearTimer();const host=document.getElementById("goldenQuestionContent");host.textContent="⏳ جارٍ تحميل السؤال الذهبي...";
