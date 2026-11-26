@@ -363,7 +363,7 @@ window.startStudentWorksheet = async function() {
                 } else {
                     control = document.createElement('input');
                     control.type = 'text';
-                    control.placeholder = field.section && field.section.indexOf('Writing') === 0 ? 'اكتب الجملة هنا...' : 'اكتب إجابتك هنا...';
+                    control.placeholder = field.section && field.section.indexOf('Writing') !== -1 ? 'اكتب الجملة هنا...' : 'اكتب إجابتك هنا...';
                 }
                 control.id = field.id;
                 control.autocomplete = 'off';
