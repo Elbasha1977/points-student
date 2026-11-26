@@ -721,6 +721,14 @@ window.questionHunterCheckAvailability = async function(){
  const button=document.getElementById("questionHunterLaunchBtn");
  const status=document.getElementById("questionHunterAvailabilityMsg");
  if(!button)return;
+ // لا تفحص تاريخ اللعبة ولا تتصل بالخادم في أيام إجازة الأنشطة.
+ if(studentActivitiesAreOnHoliday()){
+  questionHunterAvailabilitySequence++;
+  button.style.display="none";
+  if(status){status.style.display="none";status.textContent="";}
+  window.__questionHunterIdentity=null;
+  return;
+ }
  const sequence=++questionHunterAvailabilitySequence;
  button.style.display="none";
  window.__questionHunterIdentity=null;
