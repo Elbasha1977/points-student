@@ -161,8 +161,7 @@ else if(/Can you give them to me/i.test(prompt)||/Can you open them/i.test(promp
 else if(marker&&/Correct the verb/i.test(marker[0])){
 const before=prompt.slice(0,marker.index);
 const candidates=['cleaned','wearing','finished','planting','showed','climbed','cooked','drinking','stopped','playing','washed','walked','moving','worked','walks','clean','play','climb','cook','move','plant','show','walk','work','stop','did','went','eats','ran','wrote','took','made','saw','bought','came','have','has','is','are','was','were','go','eat','run','write','take','make','see','buy','come'];
-const re=new RegExp('\\\\b('+candidates.join('|')+')\\\\b','i');
-const match=re.exec(before);if(match)target=match[0];
+const tokens=before.match(/[A-Za-z']+/g)||[];for(let k=tokens.length-1;k>=0;k--){if(candidates.includes(tokens[k].toLowerCase())){target=tokens[k];break;}}
 }
 if(target){
 const end=marker?marker.index:prompt.length;const before=prompt.slice(0,end);
