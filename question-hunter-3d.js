@@ -99,7 +99,7 @@ function tap(T,opts){
  g.render((dt,t)=>{if(done)return;target.position.set(Math.sin(t*1.25)*5,2.5+Math.sin(t*2.2)*1.25,-12);target.rotation.z=Math.sin(t)*.25;g.score.textContent="المحاولة: "+(shots?1:0)+"/1";});
 }
 function rocket(T,opts){
- const g=createHost(T,{title:"🚀 قاعدة الصواريخ 3D",stats:opts.stats,hint:"اضغط على زر الإطلاق لتصيب الهدف المتحرك بالصاروخ. لديك ثلاث محاولات.",sky:0x111b3c,onSuccess:opts.onSuccess,onMiss:opts.onMiss});
+ const g=createHost(T,{title:"🚀 قاعدة الصواريخ 3D",stats:opts.stats,hint:"اضغط على زر الإطلاق لتصيب الهدف المتحرك بالصاروخ. لديك محاولة واحدة فقط.",sky:0x111b3c,onSuccess:opts.onSuccess,onMiss:opts.onMiss});
  floor(T,g.scene,0x374151,38,48);
  const target=new T.Group();g.scene.add(target);
  const core=sphere(T,.85,mat(T,0xf97316,.3),0,0,0);target.add(core);
@@ -170,7 +170,7 @@ function courier(T,opts){
  g.render((dt,t)=>{if(done)return;dist+=dt*5;van.position.x=T.MathUtils.clamp(van.position.x+((keys.r?1:0)-(keys.l?1:0))*dt*7,-5,5);van.position.z=7-dist;g.camera.position.set(van.position.x*.3,6,van.position.z+10);g.camera.lookAt(van.position.x,1,van.position.z-8);parcels.forEach(p=>{if(p.visible&&Math.abs(p.position.z-van.position.z)<1.4&&Math.abs(p.position.x-van.position.x)<1.5){p.visible=false;got++;g.sound("collect");g.score.textContent="الطرود: "+got+"/6";}});obstacles.forEach(o=>{if(o.visible&&Math.abs(o.position.z-van.position.z)<1.2&&Math.abs(o.position.x-van.position.x)<1.4){o.visible=false;g.sound("hit");dist=Math.max(0,dist-3);}});if(got===6){done=true;g.finish(true,"📬 تم توصيل جميع الطرود بنجاح!");}else if(dist>78){done=true;g.finish(false,"انتهى الطريق قبل توصيل جميع الطرود.");}});
 }
 function castle(T,opts){
- const g=createHost(T,{title:"🏰 حارس القلعة 3D",stats:opts.stats,hint:"المس الأهداف المتحركة لتصيبها بالسهام. لديك خمس محاولات.",sky:0x9bc9e8,onSuccess:opts.onSuccess,onMiss:opts.onMiss});
+ const g=createHost(T,{title:"🏰 حارس القلعة 3D",stats:opts.stats,hint:"المس أحد الأهداف المتحركة لتصيبه بالسهم. لديك محاولة واحدة فقط.",sky:0x9bc9e8,onSuccess:opts.onSuccess,onMiss:opts.onMiss});
  floor(T,g.scene,0x43834a,40,50);const wall=box(T,18,5,1.2,mat(T,0x9ca3af),0,2.5,-14);g.scene.add(wall);
  for(let x=-8;x<=8;x+=4){const tower=box(T,2,7,2,mat(T,0x78716c),x,3.5,-14);g.scene.add(tower);const roof=new T.Mesh(new T.ConeGeometry(1.6,2,4),mat(T,0x991b1b));roof.position.set(x,8,-14);g.scene.add(roof);}
  const archer=new T.Group();g.scene.add(archer);capsulePerson(T,archer,mat(T,0x7c3aed),mat(T,0xf1c27d),mat(T,0x78350f));archer.position.set(0,0,7);
@@ -181,7 +181,7 @@ function castle(T,opts){
  g.render((dt,t)=>{targets.forEach((o,i)=>{o.position.x=(i-1)*5+Math.sin(t*1.5+i)*1.6;o.position.y=3+i*.7+Math.sin(t*2+i)*.5;o.rotation.y+=dt;});});
 }
 function treasure(T,opts){
- const g=createHost(T,{title:"🗝️ كنز المعرفة 3D",stats:opts.stats,hint:"حرّك المستكشف نحو صناديق الكنز باستخدام الأسهم أو الأزرار. كل صندوق يفتح سؤالًا جديدًا.",sky:0x87ceeb,onSuccess:opts.onSuccess,onMiss:opts.onMiss});
+ const g=createHost(T,{title:"🗝️ كنز المعرفة 3D",stats:opts.stats,hint:"حرّك المستكشف نحو صناديق الكنز واجمع الصناديق الخمسة لفتح السؤال.",sky:0x87ceeb,onSuccess:opts.onSuccess,onMiss:opts.onMiss});
  floor(T,g.scene,0x6b9b45,40,90);
  for(let i=0;i<16;i++){tree(T,g.scene,(i%2?1:-1)*(7+(i%4)*1.3),-i*4-4);}
  const explorer=new T.Group();g.scene.add(explorer);const p=capsulePerson(T,explorer,mat(T,0x2563eb),mat(T,0xf1c27d),mat(T,0xf59e0b));
@@ -208,7 +208,7 @@ function race(T,opts){
  g.render((dt,t)=>{if(done)return;dist+=dt*9;car.position.x+=(lane*3-car.position.x)*dt*5;car.position.z=6-dist;car.rotation.z+=(lane*.12-car.rotation.z)*dt*4;g.camera.position.set(car.position.x*.35,5,car.position.z+10);g.camera.lookAt(car.position.x,1,car.position.z-9);obstacles.forEach(o=>{if(!o.userData.hit&&Math.abs(o.position.z-car.position.z)<1.2&&Math.abs(o.position.x-car.position.x)<1.25){o.userData.hit=true;o.material=mat(T,0x555555);crashes++;g.sound("hit");dist=Math.max(0,dist-5);g.hint.textContent="💥 اصطدام! تفادى الحواجز. الاصطدامات: "+crashes+"/3";if(crashes>=3){done=true;g.finish(false,"انتهى السباق بسبب الاصطدامات الكثيرة.");}}});g.score.textContent="المسافة: "+Math.min(100,Math.round(dist/0.84))+"%";if(dist>=84&&!done){done=true;g.finish(true,"🏁 وصلت إلى خط النهاية!");}});
 }
 function blocks(T,opts){
- const g=createHost(T,{title:"🧊 تحدي المكعبات 3D",stats:opts.stats,hint:"تحرك بين المنصات واجمع المكعبات الذهبية الخمسة. استخدم الأسهم أو الأزرار.",sky:0x9cccf4,onSuccess:opts.onSuccess,onMiss:opts.onMiss});
+ const g=createHost(T,{title:"🧊 تحدي المكعبات 3D",stats:opts.stats,hint:"تحرك في المسار واجمع المكعبات الذهبية الخمسة. استخدم الأسهم أو الأزرار.",sky:0x9cccf4,onSuccess:opts.onSuccess,onMiss:opts.onMiss});
  floor(T,g.scene,0x334155,35,90);
  const platforms=[];for(let i=0;i<10;i++){const x=(i%2?2.5:-2.5),z=-i*6;const pl=box(T,5,.55,4,mat(T,i%2?0x475569:0x64748b),x,-.2,z);g.scene.add(pl);platforms.push(pl);}
  const avatar=new T.Group();g.scene.add(avatar);capsulePerson(T,avatar,mat(T,0x7c3aed),mat(T,0xf1c27d),mat(T,0xfde047));avatar.position.set(-2.5,0,5);
@@ -275,7 +275,7 @@ function thief(T,opts){
 }
 function maze(T,opts){
  const g=createHost(T,{title:"🧭 متاهة الأبطال 3D",stats:opts.stats,hint:"اجمع المفاتيح الذهبية الثلاثة داخل المتاهة، ثم افتح بوابة الخروج. استخدم الأسهم أو WASD.",sky:0x9ac7e8,onSuccess:opts.onSuccess,onMiss:opts.onMiss});
- const layout=["#########","#P..#..K#","#.#.#.#.#","#.#...#K#","#.###.#.#","#K....E.#","#########"],spacing=2.5,wallMat=mat(T,0x475569);floor(T,g.scene,0x365b47,24,20);
+ const layout=["#########","#P..#..K#","#.#.#.#.#","#.#....K#","#.###.#.#","#K....E.#","#########"],spacing=2.5,wallMat=mat(T,0x475569);floor(T,g.scene,0x365b47,24,20);
  const keysList=[],start={r:1,c:1},exit={r:5,c:6},pos=(r,c)=>({x:(c-4)*spacing,z:(r-3)*spacing});
  layout.forEach((row,r)=>[...row].forEach((cell,c)=>{const p=pos(r,c);if(cell==="#")g.scene.add(box(T,spacing*.96,2.5,spacing*.96,wallMat,p.x,1.25,p.z));if(cell==="K"){const key=new T.Mesh(new T.OctahedronGeometry(.62),mat(T,0xfacc15,.2,.55));key.position.set(p.x,1.05,p.z);key.add(new T.PointLight(0xfbbf24,1.4,4));g.scene.add(key);keysList.push({r,c,mesh:key,got:false});}if(cell==="E"){const gm=mat(T,0x22c55e,.3,.25);g.scene.add(box(T,.22,2.4,.22,gm,p.x-1,1.2,p.z),box(T,.22,2.4,.22,gm,p.x+1,1.2,p.z),box(T,2.2,.22,.22,gm,p.x,2.3,p.z));}}));
  const hero=new T.Group();g.scene.add(hero);const hp=capsulePerson(T,hero,mat(T,0x2563eb),mat(T,0xf1c27d),mat(T,0xfacc15)),first=pos(start.r,start.c);hero.position.set(first.x,0,first.z);
