@@ -153,15 +153,27 @@ function makeCard(f,i){
 const c=el('section','card');if(f.context)c.append(el('div','context',f.context));
 const p=el('div','prompt');p.append(document.createTextNode((i+1)+'. '));
 const prompt=String(f.prompt||'');
-const marker=prompt.match(/\\(Correct the (?:verb|word|pronoun)\\)/i);
+const marker=prompt.match(/\(Correct the (?:verb|word|pronoun)\)/i);
 let target='';
 if(/How many coffee/i.test(prompt)||/How many milk/i.test(prompt))target='many';
 else if(/How much apples/i.test(prompt))target='much';
 else if(/Can you give them to me/i.test(prompt)||/Can you open them/i.test(prompt))target='them';
 else if(marker&&/Correct the verb/i.test(marker[0])){
-const before=prompt.slice(0,marker.index);
-const candidates=['cleaned','wearing','finished','planting','showed','climbed','cooked','drinking','stopped','playing','washed','walked','moving','worked','walks','clean','play','climb','cook','move','plant','show','walk','work','stop','did','went','eats','ran','wrote','took','made','saw','bought','came','have','has','is','are','was','were','go','eat','run','write','take','make','see','buy','come'];
-const tokens=before.match(/[A-Za-z']+/g)||[];for(let k=tokens.length-1;k>=0;k--){if(candidates.includes(tokens[k].toLowerCase())){target=tokens[k];break;}}
+const verbTargets=[
+[/Ali play football yesterday/i,'play'],
+[/You should cleaned your room/i,'cleaned'],
+[/We must wearing a seatbelt/i,'wearing'],
+[/I has to stop at the red light/i,'has'],
+[/My friend climb a mountain yesterday/i,'climb'],
+[/My sister cook food last week/i,'cook'],
+[/You should drinking more water/i,'drinking'],
+[/I must finished my project today/i,'finished'],
+[/They move to a new house yesterday/i,'move'],
+[/You should planting trees in the park/i,'planting'],
+[/He must showed his ID at the gate/i,'showed'],
+[/We didn't has to pay for parking/i,'has']
+];
+const found=verbTargets.find(([re])=>re.test(prompt));if(found)target=found[1];
 }
 if(target){
 const end=marker?marker.index:prompt.length;const before=prompt.slice(0,end);
