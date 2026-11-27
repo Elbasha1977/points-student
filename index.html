@@ -1532,7 +1532,7 @@ async function showPublicHomeworkCertificates(){
 async function issueMyHomeworkCertificates(){
  const cls=document.getElementById("stClass")?.value||"",name=document.getElementById("stName")?.value||"",pin=(document.getElementById("stPin")?.value||"").trim();
  const box=document.getElementById("issuedHomeworkCertificates");box.style.display="block";box.innerHTML="<div style='padding:12px'>⏳ جارٍ التحقق من بياناتك وإصدار الشهادات...</div>";
- if(!cls||!name||!/^\\d{4}$/.test(pin)){box.innerHTML="<b style='color:#b91c1c'>اختر الصف والاسم وأدخل الرقم السري الصحيح المكوّن من أربعة أرقام.</b>";return;}
+ if(!cls||!name||!/^\d{4}$/.test(pin)){box.innerHTML="<b style='color:#b91c1c'>اختر الصف والاسم وأدخل الرقم السري الصحيح المكوّن من أربعة أرقام.</b>";return;}
  try{
   const schoolId=String((window.currentStudentWorksheet&&window.currentStudentWorksheet.schoolId)||window.currentStudentIdentity?.schoolId||"global");
   const studentKey=await homeworkSha256(schoolId+"|"+cls+"|"+homeworkNormalizeName(name));
