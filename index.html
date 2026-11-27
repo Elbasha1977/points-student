@@ -794,11 +794,6 @@ async function loadWorksheetFinalReport(identity, worksheetId, submitData){
 }
 
 window.submitStudentAnswers = async function(autoSubmit=false) {
-    const scheduleAtSubmit = studentWorksheetScheduleStatus(window.currentStudentWorksheet);
-    if (scheduleAtSubmit.state === 'upcoming' || scheduleAtSubmit.state === 'closed' || scheduleAtSubmit.state === 'invalid') {
-        alert(scheduleAtSubmit.message || 'انتهى موعد حل الملزمة.');
-        return;
-    }
     const identity=window.currentStudentIdentity;
     if(!identity||!identity.studentKey||!identity.pinHash||!window.currentStudentAttemptId){alert('انتهت جلسة التحقق. ارجع وأدخل الصف والاسم والرقم السري مرة أخرى.');return;}
     const btn=document.querySelector('#stSubmitArea button');
