@@ -246,11 +246,9 @@ setTimeout(() => {
             window.currentStudentWorksheet = doc.data();
             if (titleEl) titleEl.innerText = window.currentStudentWorksheet.title || 'Worksheet';
             if (startBtn) {
-                const worksheetActive = window.currentStudentWorksheet.active !== false;
-                startBtn.disabled = !worksheetActive;
-                startBtn.textContent = worksheetActive
-                    ? '🚀 Start Worksheet'
-                    : '⏸️ الحل متوقف — انتظر إعادة تفعيل المعلم';
+                refreshStudentWorksheetScheduleButton();
+                const schedule = studentWorksheetScheduleStatus(window.currentStudentWorksheet);
+                if (schedule.message && titleEl) titleEl.innerText += ' — ' + schedule.message;
             }
         } else {
             if (titleEl) titleEl.innerText = '❌ Worksheet not found or has been deleted';
@@ -320,6 +318,29 @@ function runStudentWorksheetTimer(expiresAtMillis){
     };
     tick();window.__worksheetTimerHandle=setInterval(tick,1000);
 }
+function studentWorksheetScheduleStatus(worksheet) {
+    if (!worksheet || worksheet.timingEnabled !== true) return {state:'open', message:''};
+    const toMillis = value => value && typeof value.toMillis === 'function' ? value.toMillis() : (value && typeof value.toDate === 'function' ? value.toDate().getTime() : new Date(value).getTime());
+    const opens = toMillis(worksheet.opensAt), closes = toMillis(worksheet.closesAt), now = Date.now();
+    if (!Number.isFinite(opens) || !Number.isFinite(closes) || closes <= opens)
+        return {state:'invalid', message:'إعدادات موعد الملزمة غير مكتملة. يرجى التواصل مع المعلم.'};
+    if (now < opens) return {state:'upcoming', message:'⏰ ستتاح الملزمة في '+new Date(opens).toLocaleString('ar-QA',{timeZone:'Asia/Qatar'})+' بتوقيت قطر.'};
+    if (now >= closes) return {state:'closed', message:'🔒 انتهى موعد حل الملزمة. يرجى التواصل مع المعلم.'};
+    return {state:'open', message:''};
+}
+function refreshStudentWorksheetScheduleButton() {
+    const worksheet = window.currentStudentWorksheet;
+    const button = document.getElementById('stStartBtn');
+    if (!button || !worksheet) return;
+    const schedule = studentWorksheetScheduleStatus(worksheet);
+    const active = worksheet.active !== false;
+    button.disabled = !active || schedule.state !== 'open';
+    button.textContent = !active ? '⏸️ الحل متوقف — انتظر إعادة تفعيل المعلم'
+        : schedule.state === 'upcoming' ? '⏰ الملزمة لم تُفتح بعد'
+        : schedule.state === 'closed' ? '🔒 انتهى موعد الحل'
+        : schedule.state === 'invalid' ? '⚠️ راجع المعلم'
+        : '🚀 Start Worksheet';
+}
 window.startStudentWorksheet = async function() {
     if(studentActivitiesHolidayGuard()) return;
     const cls = document.getElementById('stClass').value;
@@ -331,6 +352,8 @@ window.startStudentWorksheet = async function() {
     const interactiveMode = window.currentStudentWorksheet && window.currentStudentWorksheet.layoutMode === 'interactive';
     if(!window.currentStudentWorksheet || (!interactiveMode && !window.currentStudentWorksheet.imageUrl)) return alert('لم يتم تحميل Worksheet بصورة صحيحة. يرجى تحديث الصفحة والمحاولة مرة أخرى.');
     if(window.currentStudentWorksheet.active === false) return alert('Your teacher has temporarily paused this worksheet. You can try again when it is reactivated.');
+    const scheduleAtStart = studentWorksheetScheduleStatus(window.currentStudentWorksheet);
+    if (scheduleAtStart.state !== 'open') return alert(scheduleAtStart.message || 'الملزمة غير متاحة الآن.');
     const schoolId = String(window.currentStudentWorksheet.schoolId || 'global');
     const studentKey = await homeworkSha256(schoolId + '|' + cls + '|' + homeworkNormalizeName(name));
     const pinHash = await homeworkSha256(studentKey + '|' + pin);
@@ -771,6 +794,11 @@ async function loadWorksheetFinalReport(identity, worksheetId, submitData){
 }
 
 window.submitStudentAnswers = async function(autoSubmit=false) {
+    const scheduleAtSubmit = studentWorksheetScheduleStatus(window.currentStudentWorksheet);
+    if (scheduleAtSubmit.state === 'upcoming' || scheduleAtSubmit.state === 'closed' || scheduleAtSubmit.state === 'invalid') {
+        alert(scheduleAtSubmit.message || 'انتهى موعد حل الملزمة.');
+        return;
+    }
     const identity=window.currentStudentIdentity;
     if(!identity||!identity.studentKey||!identity.pinHash||!window.currentStudentAttemptId){alert('انتهت جلسة التحقق. ارجع وأدخل الصف والاسم والرقم السري مرة أخرى.');return;}
     const btn=document.querySelector('#stSubmitArea button');
