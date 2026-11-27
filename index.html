@@ -57,6 +57,31 @@ body{margin:0;background:linear-gradient(135deg,#dbeafe,#c7d2fe);padding:14px;mi
 @media(max-width:480px){#studentHolidayModal{padding:8px}#studentHolidayModal .student-holiday-backdrop{padding:8px}#studentHolidayModal .student-holiday-card{border-radius:24px;padding:20px 16px}}
 @media(prefers-reduced-motion:reduce){#studentHolidayModal .student-holiday-card{animation:none}}
 
+/* تقرير نتيجة الملزمة الإثرائية */
+#stSuccess{padding:0!important;overflow:hidden;background:#071b3a!important;border:3px solid #fbbf24}
+.worksheet-report{position:relative;overflow:hidden;padding:clamp(16px,3vw,30px);color:#172554;background:radial-gradient(circle at 12% 8%,#60a5fa 0,transparent 27%),radial-gradient(circle at 90% 12%,#c4b5fd 0,transparent 28%),linear-gradient(145deg,#eff6ff 0%,#f5f3ff 48%,#fff7ed 100%);text-align:center}
+.worksheet-report:before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.28;background-image:radial-gradient(#f59e0b 1.5px,transparent 1.5px);background-size:24px 24px}
+.worksheet-report-top,.worksheet-report-student,.worksheet-report-score,.worksheet-report-status,.worksheet-report-message,.worksheet-report-close{position:relative;z-index:1}
+.worksheet-report-top{padding:20px 14px;border-radius:22px;color:#fff;background:linear-gradient(120deg,#1e3a8a,#4338ca 55%,#7c3aed);box-shadow:0 9px 22px #312e8155;border:2px solid #fcd34d}
+.worksheet-report-trophy{font-size:44px;line-height:1.2}
+.worksheet-report-kicker{font-size:clamp(19px,3vw,27px);font-weight:900;color:#fde68a}
+.worksheet-report-top h2{margin:10px 0 5px;color:#fff;font-size:clamp(21px,4vw,32px);line-height:1.5}
+.worksheet-report-top p{margin:4px 0 0;color:#e0e7ff;font-weight:700}
+.worksheet-report-student{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:14px 0}
+.worksheet-report-student>div{padding:13px 8px;border:1px solid #bfdbfe;border-radius:15px;background:#fff;box-shadow:0 4px 12px #1e3a8a12;min-width:0}
+.worksheet-report-student span,.worksheet-report-score span{display:block;color:#64748b;font-size:13px;font-weight:700;margin-bottom:5px}
+.worksheet-report-student b{display:block;color:#1e3a8a;font-size:clamp(14px,2.5vw,18px);overflow-wrap:anywhere}
+.worksheet-report-score{display:flex;align-items:center;justify-content:center;gap:20px;padding:20px;margin:12px 0;border:2px solid #c4b5fd;border-radius:22px;background:linear-gradient(120deg,#fff,#ede9fe);box-shadow:0 7px 18px #6d28d922}
+.worksheet-report-score strong{display:block;color:#7e22ce;font-size:clamp(35px,7vw,56px);font-weight:1000;line-height:1.2}
+.worksheet-report-score small{display:block;margin-top:5px;color:#166534;font-size:20px;font-weight:900}
+.worksheet-report-medal{font-size:clamp(44px,8vw,68px);filter:drop-shadow(0 5px 4px #f59e0b55)}
+.worksheet-report-status{padding:15px;border:2px solid #86efac;border-radius:17px;background:linear-gradient(100deg,#f0fdf4,#dcfce7);color:#166534;font-size:clamp(15px,2.7vw,20px);font-weight:900;line-height:1.7}
+.worksheet-report-message{margin:13px 0;padding:13px;border-radius:15px;background:#fff;color:#4338ca;font-weight:800;line-height:1.8}
+.worksheet-report-close{min-width:min(280px,100%);margin:7px auto 0;padding:14px 34px;border:2px solid #fff;border-radius:999px;background:linear-gradient(100deg,#b91c1c,#ef4444);color:#fff;font-size:22px;font-weight:900;cursor:pointer;box-shadow:0 7px 0 #7f1d1d,0 10px 20px #7f1d1d44}
+.worksheet-report-close:active{transform:translateY(3px);box-shadow:0 4px 0 #7f1d1d}
+@media(max-width:600px){.worksheet-report-student{grid-template-columns:1fr}.worksheet-report-score{gap:10px}.worksheet-report{padding:12px}}
+
+
 </style>
 </head>
 <body>
@@ -93,8 +118,16 @@ body{margin:0;background:linear-gradient(135deg,#dbeafe,#c7d2fe);padding:14px;mi
   <button type="button" class="action-btn" onclick="openDailyChallenge()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#ea580c,#f59e0b);color:white">🔥 تحدي اليوم</button>
   <div id="studentHomeworkHonorBoard" style="display:none;margin-top:16px;padding:16px;border-radius:16px;background:linear-gradient(135deg,#fffbeb,#fef3c7);text-align:right"></div>
  </div>
- <div class="section" id="stSuccess" style="display:none;text-align:center"><h1 style="font-size:60px">🎉</h1><h2 style="color:#16a34a">Your answers have been submitted successfully!</h2><p style="color:#166534;font-weight:bold">Your submission has been recorded for this round. You can try again when your teacher reactivates the worksheet.</p><button type="button" class="action-btn" onclick="showStudentHomeworkHonorBoard()" style="width:100%;margin-top:18px;background:linear-gradient(135deg,#b45309,#f59e0b);color:white">🏆 لوحة الشرف</button>
- <button type="button" class="action-btn" onclick="openDailyChallenge()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#ea580c,#f59e0b);color:white">🔥 تحدي اليوم</button><div id="studentHomeworkHonorBoardSuccess" style="display:none;margin-top:16px;padding:16px;border-radius:16px;background:linear-gradient(135deg,#fffbeb,#fef3c7);text-align:right"></div></div>
+ <div class="section" id="stSuccess" style="display:none">
+  <div class="worksheet-report" dir="rtl">
+   <div class="worksheet-report-top"><div class="worksheet-report-trophy">🏆</div><div class="worksheet-report-kicker">تقرير نتيجة الملزمة الإثرائية</div><h2>أحسنت! لقد أنهيت حل الملزمة بنجاح</h2><p id="worksheetReportTitle">نتيجتك النهائية</p></div>
+   <div class="worksheet-report-student"><div><span>اسم الطالب</span><b id="worksheetReportName">—</b></div><div><span>الصف والشعبة</span><b id="worksheetReportClass">—</b></div><div><span>تاريخ التسليم</span><b id="worksheetReportDate">—</b></div></div>
+   <div class="worksheet-report-score"><div><span>درجتك النهائية</span><strong id="worksheetReportScore">جارٍ تحميل النتيجة...</strong><small id="worksheetReportPercent">يرجى الانتظار</small></div><div class="worksheet-report-medal">⭐</div></div>
+   <div class="worksheet-report-status" id="worksheetReportPointsStatus">⏳ جارٍ التحقق من تسجيل النقاط في رصيدك...</div>
+   <div class="worksheet-report-message">استمر في الاجتهاد والمثابرة، ونتمنى لك مزيدًا من التفوق والنجاح 🌟</div>
+   <button type="button" class="worksheet-report-close" onclick="closeWorksheetFinalReport()">إغلاق ✕</button>
+  </div>
+ </div>
  <div class="section" id="questionHunterPanel" style="display:none;border:2px solid #0ea5e9;background:linear-gradient(135deg,#eff6ff,#ecfeff)">
   <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2 style="color:#0369a1;margin:0">🎯 صائد الأسئلة</h2><button type="button" class="action-btn" onclick="closeQuestionHunter()" style="background:#64748b;padding:8px 12px">Close</button></div>
   <div id="questionHunterContent" style="margin-top:14px;text-align:right"></div>
@@ -692,6 +725,51 @@ window.showStudentHomeworkHonorBoard = async function(period) {
   }
 };
 
+window.closeWorksheetFinalReport = function(){
+    const report=document.getElementById('stSuccess');
+    if(report) report.style.display='none';
+    const form=document.getElementById('stInfoForm');
+    if(form) form.style.display='block';
+    window.scrollTo({top:0,behavior:'smooth'});
+};
+
+async function loadWorksheetFinalReport(identity, worksheetId, submitData){
+    const title=String(window.currentStudentWorksheet?.title||'الملزمة الإثرائية');
+    document.getElementById('worksheetReportTitle').textContent=title;
+    document.getElementById('worksheetReportName').textContent=identity.studentName||'—';
+    document.getElementById('worksheetReportClass').textContent=identity.studentClass||'—';
+    document.getElementById('worksheetReportDate').textContent=new Intl.DateTimeFormat('ar-QA',{timeZone:'Asia/Qatar',dateStyle:'full',timeStyle:'short'}).format(new Date());
+    const scoreEl=document.getElementById('worksheetReportScore');
+    const percentEl=document.getElementById('worksheetReportPercent');
+    const statusEl=document.getElementById('worksheetReportPointsStatus');
+    scoreEl.textContent='تم استلام إجاباتك';
+    percentEl.textContent='جارٍ تحميل الدرجة المعتمدة...';
+    statusEl.textContent='⏳ جارٍ التحقق من تسجيل النقاط في رصيدك...';
+    try{
+        const call=firebase.app().functions('us-central1').httpsCallable('getStudentHomeworkResults');
+        const resultResponse=await call({studentKey:identity.studentKey,pinHash:identity.pinHash,schoolId:identity.schoolId,studentClass:identity.studentClass,studentName:identity.studentName});
+        const items=Array.isArray(resultResponse?.data?.results)?resultResponse.data.results:[];
+        const expectedTitle=title.trim().toLowerCase();
+        const match=items.slice().reverse().find(item=>String(item.worksheetTitle||'').trim().toLowerCase()===expectedTitle)
+          || items.slice().reverse().find(item=>String(item.worksheetId||'')===String(worksheetId||''));
+        if(match && Number.isFinite(Number(match.score)) && Number.isFinite(Number(match.maxScore)) && Number(match.maxScore)>0){
+            const score=Number(match.score),max=Number(match.maxScore),pct=Math.round(score/max*100);
+            scoreEl.textContent=score+' / '+max;
+            percentEl.textContent=pct+'% من الدرجة الكلية';
+            statusEl.textContent='✅ تم التحقق من النتيجة وتسجيل النقاط في رصيدك بنظام POINTS.';
+        }else{
+            scoreEl.textContent='تم حفظ الإجابات';
+            percentEl.textContent='الدرجة قيد التحديث';
+            statusEl.textContent='✅ تم حفظ إجاباتك بنجاح. سيتم عرض النقاط فور ظهور النتيجة المعتمدة في سجل واجباتك.';
+        }
+    }catch(error){
+        console.warn('Worksheet report score lookup:',error);
+        scoreEl.textContent='تم حفظ الإجابات';
+        percentEl.textContent='الدرجة قيد التحديث';
+        statusEl.textContent='✅ تم تأكيد حفظ إجاباتك. تعذر تحميل تفاصيل الرصيد الآن؛ يمكنك مراجعة نقاط واجباتك لاحقًا.';
+    }
+}
+
 window.submitStudentAnswers = async function(autoSubmit=false) {
     const identity=window.currentStudentIdentity;
     if(!identity||!identity.studentKey||!identity.pinHash||!window.currentStudentAttemptId){alert('انتهت جلسة التحقق. ارجع وأدخل الصف والاسم والرقم السري مرة أخرى.');return;}
@@ -710,25 +788,27 @@ window.submitStudentAnswers = async function(autoSubmit=false) {
     }
     if(btn){btn.disabled=true;btn.textContent=autoSubmit?'⏳ Time is up. Submitting...':'⏳ Submitting answers...';}
     try{
+        const worksheetId=new URLSearchParams(window.location.search).get('id');
         const callable=firebase.app().functions('us-central1').httpsCallable('submitStudentWorksheetAnswers');
         const response=await callable({
-            worksheetId:new URLSearchParams(window.location.search).get('id'),
-            attemptId:window.currentStudentAttemptId,schoolId:identity.schoolId,studentKey:identity.studentKey,
+            worksheetId,attemptId:window.currentStudentAttemptId,schoolId:identity.schoolId,studentKey:identity.studentKey,
             pinHash:identity.pinHash,studentName:identity.studentName,studentClass:identity.studentClass,answers
         });
         if(!response||!response.data||response.data.success!==true)throw new Error('لم يؤكد الخادم حفظ الإجابات.');
         stopStudentWorksheetTimer();
-        document.getElementById('stWorkspace').style.display='none';document.getElementById('stSubmitArea').style.display='none';
+        document.getElementById('stWorkspace').style.display='none';
+        document.getElementById('stSubmitArea').style.display='none';
+        document.getElementById('stInfoForm').style.display='none';
         document.getElementById('stSuccess').style.display='block';
-        // Each teacher reactivation creates a new server-side attempt cycle.
-        // The student returns to the link after the teacher reopens the worksheet.
+        document.getElementById('stSuccess').scrollIntoView({behavior:'smooth',block:'start'});
+        await loadWorksheetFinalReport(identity,worksheetId,response.data);
+        // كل دورة إعادة تفعيل تُدار من الخادم، ولا تُمنح نقاط إضافية من واجهة الطالب.
     }catch(error){
         console.error('Student answers submit error:',error);
         alert(error.message||'Could not submit your answers.');
         if(btn){btn.disabled=false;btn.textContent='✅ Submit Answers';}
     }
 }
-
 
 
 // ==================== تحدي اليوم: student experience ====================
