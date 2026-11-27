@@ -82,6 +82,32 @@ body{margin:0;background:linear-gradient(135deg,#dbeafe,#c7d2fe);padding:14px;mi
 @media(max-width:600px){.worksheet-report-student{grid-template-columns:1fr}.worksheet-report-score{gap:10px}.worksheet-report{padding:12px}}
 
 
+
+/* شهادات تقدير الواجبات المنزلية */
+#homeworkCertificatePrintArea{display:none}
+.homework-honor-row{padding:12px;margin:8px 0;background:#fff;border:1px solid #ddd6fe;border-radius:12px;line-height:1.8}
+.homework-certificate{position:relative;box-sizing:border-box;width:100%;min-height:185mm;padding:13mm 15mm;margin:12px auto;background:linear-gradient(145deg,#fffdf5,#fff 48%,#f5f3ff);color:#172554;text-align:center;border:9px double #7c3aed;outline:4px solid #f59e0b;outline-offset:-17px;box-shadow:inset 0 0 0 3px #fbbf24;font-family:Tahoma,Arial}
+.homework-certificate:before{content:"✦  ✧  ✦  ✧  ✦";display:block;color:#d97706;font-size:23px;letter-spacing:8px;margin:2mm 0 8mm}
+.homework-certificate .hc-school{font-size:20px;font-weight:900;color:#1e3a8a;margin:0 0 7mm}
+.homework-certificate .hc-title{font-size:42px;font-weight:1000;color:#7c3aed;margin:4mm 0}
+.homework-certificate .hc-tier{display:inline-block;padding:8px 30px;margin:5mm 0;border-radius:30px;background:linear-gradient(90deg,#f59e0b,#fde68a);color:#78350f;font-size:27px;font-weight:900;border:2px solid #d97706}
+.homework-certificate .hc-name{font-size:31px;font-weight:900;color:#1d4ed8;border-bottom:2px dotted #a78bfa;display:inline-block;padding:5px 20px;margin:5mm auto}
+.homework-certificate .hc-text{font-size:20px;line-height:2;margin:5mm auto;max-width:90%}
+.homework-certificate .hc-stats{display:flex;justify-content:center;gap:15mm;flex-wrap:wrap;margin:7mm auto}
+.homework-certificate .hc-stat{padding:10px 18px;border-radius:14px;background:#eff6ff;border:1px solid #93c5fd;font-size:18px;font-weight:900}
+.homework-certificate .hc-date{font-size:17px;font-weight:800;color:#334155;margin:7mm 0}
+.homework-certificate .hc-code{font-size:14px;color:#475569;direction:ltr}
+.homework-certificate .hc-footer{display:flex;justify-content:space-around;gap:10mm;margin-top:12mm;text-align:center}
+.homework-certificate .hc-sign{width:42%;padding-top:5mm;border-top:1px solid #64748b;font-weight:900;line-height:1.9}
+@media print{
+ @page{size:A4 landscape;margin:8mm}
+ body{background:#fff!important;padding:0!important}
+ body *{visibility:hidden!important}
+ #homeworkCertificatePrintArea,#homeworkCertificatePrintArea *{visibility:visible!important}
+ #homeworkCertificatePrintArea{display:block!important;position:absolute;left:0;top:0;width:100%}
+ .homework-certificate{width:100%;height:190mm;min-height:190mm;margin:0;page-break-after:always;break-after:page;box-shadow:none;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ .homework-certificate:last-child{page-break-after:auto;break-after:auto}
+}
 </style>
 </head>
 <body>
@@ -106,6 +132,9 @@ body{margin:0;background:linear-gradient(135deg,#dbeafe,#c7d2fe);padding:14px;mi
   <button type="button" id="questionHunterLaunchBtn" class="action-btn" onclick="questionHunterLaunch()" style="display:block;width:100%;margin-top:10px;background:linear-gradient(135deg,#0f766e,#0891b2);color:white;font-size:18px">🎮 العب واكسب</button>
   <div id="questionHunterAvailabilityMsg" style="display:none;margin-top:8px;padding:10px;border-radius:10px;background:#eff6ff;color:#1e40af;font-size:13px;text-align:center;line-height:1.7"></div>
     <div id="myHomeworkResults" style="display:none;margin-top:14px;padding:12px;border-radius:10px;background:#ecfeff;text-align:right"></div>
+  <button type="button" class="action-btn" onclick="showPublicHomeworkCertificates()" style="width:100%;margin-top:10px;background:linear-gradient(135deg,#7c3aed,#db2777);color:white">🎖️ شهادات تقدير الواجبات المنزلية</button>
+  <div id="publicHomeworkCertificates" style="display:none;margin-top:14px;padding:16px;border:2px solid #c4b5fd;border-radius:16px;background:linear-gradient(135deg,#faf5ff,#fff7ed);text-align:right"></div>
+  <div id="issuedHomeworkCertificates" style="display:none;margin-top:14px"></div>
  </div>
  <div class="section" id="stWorkspace" style="display:none;position:relative;text-align:center;padding:12px;background:#f1f5f9;overflow:auto">
   <div id="stTimerPanel" style="display:none;position:sticky;top:6px;z-index:20;background:#1e3a8a;color:white;padding:12px;border-radius:10px;margin:0 auto 14px;max-width:360px;font-size:20px;font-weight:900">⏳ الوقت المتبقي: <span id="stTimerValue">--:--</span></div>
@@ -1486,6 +1515,47 @@ if ('serviceWorker' in navigator) {
   catch(e){btn.disabled=false;goldenQuestionMessage(e.message||"تعذر إرسال الإجابة.");}
  }
  
+
+async function showPublicHomeworkCertificates(){
+ const box=document.getElementById("publicHomeworkCertificates");
+ box.style.display="block";box.innerHTML="<div style='text-align:center;padding:14px'>⏳ جارٍ تحميل قائمة الطلاب المكرمين...</div>";
+ try{
+  const call=firebase.app().functions("us-central1").httpsCallable("getPublicHomeworkCertificateHonors");
+  const response=await call({}),data=response.data||{};
+  if(data.success!==true)throw new Error("لم يؤكد الخادم تحميل القائمة.");
+  const rows=Array.isArray(data.honors)?data.honors:[];
+  if(!rows.length){box.innerHTML="<h3 style='color:#6d28d9'>🎖️ شهادات تقدير الواجبات المنزلية</h3><p>لم يصل أي طالب إلى حدود التكريم حتى الآن. نتمنى للجميع التوفيق!</p>";return;}
+  box.innerHTML="<h3 style='color:#6d28d9;margin-top:0'>🎖️ الطلاب الذين حققوا مستويات التكريم</h3><p>هذه القائمة عامة للاطلاع، أما إصدار الشهادة فيتطلب بيانات الطالب ورقمه السري.</p>"+rows.map(st=>"<div class='homework-honor-row'><b>"+safeStudentResult(st.studentName)+"</b> — "+safeStudentResult(st.studentClass)+"<br><b style='color:#7c3aed'>"+Number(st.homeworkPoints||0).toLocaleString("ar-QA")+" نقطة واجبات</b><div style='margin-top:5px'>"+(st.certificates||[]).map(t=>"<span style='display:inline-block;margin:3px;padding:4px 8px;border-radius:15px;background:#fef3c7;color:#92400e;font-weight:bold'>🏅 "+safeStudentResult(t.title)+"</span>").join("")+"</div></div>").join("")+
+  "<button type='button' class='action-btn primary' onclick='issueMyHomeworkCertificates()' style='width:100%;margin-top:12px'>🔐 إصدار شهاداتي الخاصة</button><div style='font-size:13px;color:#475569;margin-top:8px'>أدخل الصف والاسم والرقم السري في بيانات الطالب أعلاه أولًا.</div>";
+ }catch(e){box.innerHTML="<b style='color:#b91c1c'>تعذر تحميل القائمة: "+safeStudentResult(e.message||e)+"</b>";}
+}
+async function issueMyHomeworkCertificates(){
+ const cls=document.getElementById("stClass")?.value||"",name=document.getElementById("stName")?.value||"",pin=(document.getElementById("stPin")?.value||"").trim();
+ const box=document.getElementById("issuedHomeworkCertificates");box.style.display="block";box.innerHTML="<div style='padding:12px'>⏳ جارٍ التحقق من بياناتك وإصدار الشهادات...</div>";
+ if(!cls||!name||!/^\\d{4}$/.test(pin)){box.innerHTML="<b style='color:#b91c1c'>اختر الصف والاسم وأدخل الرقم السري الصحيح المكوّن من أربعة أرقام.</b>";return;}
+ try{
+  const schoolId=String((window.currentStudentWorksheet&&window.currentStudentWorksheet.schoolId)||window.currentStudentIdentity?.schoolId||"global");
+  const studentKey=await homeworkSha256(schoolId+"|"+cls+"|"+homeworkNormalizeName(name));
+  const pinHash=await homeworkSha256(studentKey+"|"+pin);
+  const call=firebase.app().functions("us-central1").httpsCallable("issueHomeworkCertificates");
+  const response=await call({schoolId,studentKey,pinHash,studentName:name,studentClass:cls}),data=response.data||{};
+  if(data.success!==true)throw new Error("لم يؤكد الخادم إصدار الشهادات.");
+  if(!Array.isArray(data.certificates)||!data.certificates.length){box.innerHTML="<div class='homework-honor-row'><b>لم تصل بعد إلى الحد الأدنى للحصول على شهادة.</b><br>نقاط واجباتك الحالية: "+Number(data.homeworkPoints||0).toLocaleString("ar-QA")+" نقطة.</div>";return;}
+  window.__issuedHomeworkCertificates=data.certificates;
+  box.innerHTML="<div class='homework-honor-row'><h3 style='color:#166534;margin-top:0'>🎉 تم إصدار شهاداتك بنجاح</h3><p>عدد الواجبات المعتمدة: <b>"+Number(data.assignments||0)+"</b> — نقاط الواجبات: <b>"+Number(data.homeworkPoints||0).toLocaleString("ar-QA")+"</b></p><p>يمكنك طباعة الشهادات أو حفظها بصيغة PDF، ثم إحضارها للمعلم للتوقيع والختم الشخصي.</p><button class='action-btn success' type='button' onclick='printMyHomeworkCertificates()' style='width:100%'>🖨️ طباعة / حفظ الشهادات PDF</button></div>";
+ }catch(e){box.innerHTML="<b style='color:#b91c1c'>تعذر إصدار الشهادات: "+safeStudentResult(e.message||e)+"</b>";}
+}
+function printMyHomeworkCertificates(){
+ const list=Array.isArray(window.__issuedHomeworkCertificates)?window.__issuedHomeworkCertificates:[];
+ if(!list.length)return;
+ let area=document.getElementById("homeworkCertificatePrintArea");
+ if(!area){area=document.createElement("div");area.id="homeworkCertificatePrintArea";document.body.appendChild(area);}
+ const name=document.getElementById("stName")?.value||window.currentStudentIdentity?.studentName||"";
+ const cls=document.getElementById("stClass")?.value||window.currentStudentIdentity?.studentClass||"";
+ area.innerHTML=list.map(c=>"<article class='homework-certificate' dir='rtl'><div class='hc-school'>"+safeStudentResult(c.schoolName)+"</div><div class='hc-title'>شهادة تقدير</div><div style='font-size:20px;color:#475569;font-weight:bold'>تُمنح هذه الشهادة إلى الطالب</div><div class='hc-name'>"+safeStudentResult(name)+"</div><div style='font-size:18px;font-weight:bold'>الصف: "+safeStudentResult(cls)+"</div><div class='hc-tier'>"+safeStudentResult(c.tierTitle)+"</div><div class='hc-text'>"+safeStudentResult(c.message)+"</div><div class='hc-stats'><div class='hc-stat'>⭐ نقاط الواجبات: "+Number(c.homeworkPoints||0).toLocaleString("ar-QA")+"</div><div class='hc-stat'>📚 عدد الواجبات المعتمدة: "+Number(c.homeworkAssignments||0).toLocaleString("ar-QA")+"</div></div><div class='hc-date'>تاريخ الإصدار: "+safeStudentResult(c.issuedAtText)+"</div><div class='hc-code'>كود التحقق: "+safeStudentResult(c.verificationCode)+"</div><div class='hc-footer'><div class='hc-sign'>توقيع المعلم وختمه الشخصي<br>عبد الباسط عطية</div><div class='hc-sign'>إدارة المدرسة<br>مدرسة أحمد بن راشد المريخي الابتدائية للبنين</div></div><div style='margin-top:7mm;color:#b45309;font-weight:900'>✨ بالعلم والاجتهاد نرتقي ✨</div></article>").join("");
+ window.print();
+}
+
 </script>
 </body></html>
 <!-- Trigger GitHub Pages deployment for game-audit fixes (2026-11-26) -->
